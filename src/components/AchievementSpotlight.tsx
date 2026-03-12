@@ -56,10 +56,9 @@ export default function AchievementSpotlight({ items }: Props) {
           <div
             key={ach.id}
             data-idx={idx}
-            ref={(el) => (refs.current[idx] = el)}
-            className={`rounded-xl border border-white/10 p-4 sm:p-5 transition-colors ${
-              idx === active ? "bg-white/5" : "bg-white/2"
-            }`}
+            ref={(el) => { refs.current[idx] = el; }}
+            className={`rounded-xl border border-white/10 p-4 sm:p-5 transition-colors ${idx === active ? "bg-white/5" : "bg-white/2"
+              }`}
           >
             <div className="text-xs opacity-60">{ach.year}</div>
             <div className="font-medium">{ach.title}</div>

@@ -1,6 +1,13 @@
+"use client";
+
+import React, { useState } from "react";
 import ChatWidget from "@/components/ChatWidget";
 import AchievementSpotlight, { Achievement } from "@/components/AchievementSpotlight";
 import GlassCard from "@/components/GlassCard";
+import MatrixRoom from "@/components/MatrixRoom";
+import MatrixOverlay from "@/components/MatrixOverlay";
+import LLMWindow from "@/components/LLMWindow";
+
 
 const achievements: Achievement[] = [
   {
@@ -27,8 +34,33 @@ const achievements: Achievement[] = [
 ];
 
 export default function Home() {
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+
   return (
-    <div className="relative min-h-dvh">
+    <div className="relative min-h-dvh bg-black">
+      {/* 3D Matrix Environment */}
+      <div className="absolute inset-0 z-0 h-screen w-full">
+        <MatrixRoom 
+          onZoomChange={(zoomed) => {
+            setIsZoomed(zoomed);
+            if (!zoomed) {
+              setTerminalOpen(false);
+            }
+          }}
+          onArrived={() => setTerminalOpen(true)}
+        />
+        {!isZoomed && <MatrixOverlay />}
+        <LLMWindow isOpen={terminalOpen} onClose={() => {
+           setTerminalOpen(false);
+           // NOTE: The click on the close button shouldn't propagate, but if we want to reset zoom, 
+           // we'd need to pass a method to MatrixRoom. Let's let the user click the background to zoom out.
+        }} />
+      </div>
+
+      {/* Main Content (Push down past the 100vh hero) */}
+      <div className="relative z-10 pt-[100vh]">
+
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-10 pt-20 md:pt-28 pb-10">
         <div className="grid md:grid-cols-12 gap-6 items-center">
@@ -51,7 +83,7 @@ export default function Home() {
           <div className="md:col-span-5">
             <GlassCard className="p-6 md:p-8">
               <div className="text-sm uppercase tracking-wide opacity-70">About</div>
-              <div className="text-xl font-medium mt-1">Your Name</div>
+              <div className="text-xl font-medium mt-1">Allen Niktalov</div>
               <p className="mt-3 opacity-90">
                 Product-focused engineer specializing in delightful, accessible experiences. Passionate about craft
                 and performance.
@@ -70,12 +102,13 @@ export default function Home() {
       <footer id="contact" className="max-w-6xl mx-auto px-6 md:px-10 pb-24 pt-8">
         <div className="glass p-6 md:p-8">
           <div className="text-sm uppercase tracking-wide opacity-70">Contact</div>
-          <div className="mt-2">Reach out at your.email@example.com</div>
+          <div className="mt-2">Reach out at allenniktalov@gmail.com</div>
         </div>
       </footer>
 
       {/* Floating Chat Assistant */}
       <ChatWidget />
+      </div>
     </div>
   );
 }

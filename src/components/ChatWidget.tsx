@@ -20,7 +20,7 @@ export default function ChatWidget() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const next = [...messages, { role: "user", content: text }];
+    const next: ChatMessage[] = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
     setLoading(true);
@@ -34,7 +34,7 @@ export default function ChatWidget() {
       const data = await res.json();
       const content = data?.content ?? "(No response)";
       setMessages((m) => [...m, { role: "assistant", content }]);
-    } catch (e) {
+    } catch {
       setMessages((m) => [
         ...m,
         {
@@ -80,13 +80,11 @@ export default function ChatWidget() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`${
-                  m.role === "user" ? "ml-auto" : "mr-auto"
-                } max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
-                  m.role === "user"
+                className={`${m.role === "user" ? "ml-auto" : "mr-auto"
+                  } max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${m.role === "user"
                     ? "bg-white/10 border border-white/15"
                     : "bg-black/20 border border-white/10"
-                }`}
+                  }`}
               >
                 {m.content}
               </div>
