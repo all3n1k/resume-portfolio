@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model,
-        messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
+        messages: messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
         temperature: 0.3,
         stream: false,
       }),
@@ -43,9 +43,10 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
     return new Response(
-      JSON.stringify({ error: "Server error", detail: e?.message ?? String(e) }),
+      JSON.stringify({ error: "Server error", detail: errorMessage }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

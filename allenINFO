@@ -1,0 +1,27 @@
+Technical Background & Professional Experience
+Early Technical Foundation (2014–) Beginning in 2014, I developed my technical literacy through hands-on hardware work — disassembling and reassembling first-generation PlayStation 3s and original Xbox consoles, modifying their cooling systems and casings. This progressed into PC building after acquiring a prebuilt system with an Intel Core i7-4790K and GTX 760 Ti, which I later upgraded to an AMD workstation CPU and GTX 980.
+Software & Modding Concurrent with hardware work, I began modding games — primarily Minecraft and PC ports of console titles — using publicly available scripts and tools like Cheat Engine and custom menus. This introduced me to software engineering concepts and eventually game development through Unreal Engine projects and server hosting. Modding experience transitioned into software cracking and reverse engineering, deepening my understanding of application internals.
+Web Security & Applied Research I organized a small team of technically proficient peers to conduct web application security research. Our focus was anti-bot evasion, credential stuffing simulation, and authentication auditing on behalf of target platforms including fast food chains and e-commerce sites. Key technical work included:
+Building custom forks of OpenBullet with extended browser emulation and custom user-agent spoofing
+Developing botnet request infrastructure and JavaScript-based fingerprint evasion techniques
+Aggregating and sanitizing credential data dumps for use in testing pipelines
+Using Frida on Android and jailbroken iOS devices to hook and inspect app authentication flows
+Designing a proprietary time-based encryption method tied to atomic clock-synchronized user-agent generation
+This work culminated in an attempt to incorporate as a security company, which was later dissolved as the team diverged to separate projects.
+Jewelry Manufacturing — Infrastructure & Software Development I co-founded and served as the sole technology architect for a jewelry manufacturing company. I designed and built the company's full technology stack from the ground up over approximately one year, including:
+A networked workstation infrastructure connected over fiber
+A React web application enabling customers to browse AI-generated design concepts (using early diffusion models), select preferred directions, and communicate with designers via an iMessage-style chat interface
+A planning board for internal production teams — inspired by Obsidian's graph view — with a linked-node interface where overdue orders rendered as larger nodes relative to newer ones
+A multi-stage order status system delivering photo updates to customers at each production phase, modeled after Apple's order tracking
+Webhook integrations with RTMP and SMS providers for real-time order notifications and two-factor authentication
+User account functionality with saved design history, backed initially by Google Drive as a primitive database
+The system meaningfully reduced headcount requirements by automating coordination between design, casting, stone-setting, and customer communication teams. After demonstrating bottom-line impact, I focused on UX/UI refinement and transitioned the app to a CDN architecture targeting the New York tri-state area as the primary market.
+Cybersecurity — Technical Support & Penetration Testing Following the jewelry venture, I joined a cybersecurity firm as a Technical Support Specialist. Responsibilities spanned:
+Helpdesk and ticket management
+Device provisioning, OS troubleshooting, and image flashing using MDM software and CLI tools (e.g., Rufus)
+Server infrastructure maintenance, patch management, and container rollback automation via cron jobs
+Network intrusion response, including spawning backed-up server containers and patching vulnerability windows
+Ongoing CVE research and vulnerability tracking
+Contributing to an internal workforce management system using Go, assembled from open-source components
+I was authorized to conduct internal penetration testing engagements under defined scope and client data policies. This included full kill-chain execution: enumeration, lateral traversal, and privilege escalation — followed by post-exploitation reports delivered to reliability engineering teams. Primary tools used: Metasploit/MSFVenom, Burp Suite, and Ghidra for malware decompilation.
+I departed this role upon relocating to Philadelphia.

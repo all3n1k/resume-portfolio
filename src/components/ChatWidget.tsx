@@ -20,7 +20,7 @@ export default function ChatWidget() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const next = [...messages, { role: "user", content: text }];
+    const next: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setInput("");
     setLoading(true);
