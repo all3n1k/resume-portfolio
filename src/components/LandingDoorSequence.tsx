@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import ArchitectScene from "./ArchitectScene";
-import { MoveRight } from "lucide-react";
 
 interface LandingDoorSequenceProps {
   children: React.ReactNode;

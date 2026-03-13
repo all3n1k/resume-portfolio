@@ -568,7 +568,7 @@ function Scene({
 
       {/* Background & fog */}
       <color attach="background" args={["#ffffff"]} />
-      <fog attach="fog" args={["#ffffff", 12, 38]} />
+      <fog attach="fog" args={["#ffffff", 14, 45]} />
 
       {/* Reflective floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -596,27 +596,178 @@ function Scene({
       {/* Door */}
       <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
 
-      {/* Characters */}
-      {/* Architect Placeholder (Right Side, further back near door) */}
-      <group position={ARCHITECT_CONFIG.architectPosition} rotation={ARCHITECT_CONFIG.architectRotation}>
-        {/* Chair */}
-        <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.2, 1.2, 1.2]} />
-          <meshStandardMaterial color="#050505" roughness={0.9} />
+      {/* ── Neo (Standing, left side) ────────────────────────────── */}
+      <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
+        {/* Head */}
+        <mesh position={[0, 1.72, 0]} castShadow>
+          <sphereGeometry args={[0.14, 12, 8]} />
+          <meshStandardMaterial color="#d4a574" roughness={0.8} />
         </mesh>
-        {/* Architect Figure (Sitting) */}
-        <mesh position={[0, 1.2, 0.2]} castShadow receiveShadow>
-          <boxGeometry args={[0.8, 1.4, 0.6]} />
-          <meshStandardMaterial color="#ab0f0f" roughness={0.7} />
+        {/* Hair */}
+        <mesh position={[0, 1.82, -0.02]} castShadow>
+          <sphereGeometry args={[0.15, 8, 6]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.95} />
+        </mesh>
+        {/* Sunglasses band */}
+        <mesh position={[0, 1.73, 0.12]}>
+          <boxGeometry args={[0.22, 0.04, 0.04]} />
+          <meshStandardMaterial color="#111" metalness={0.9} roughness={0.1} />
+        </mesh>
+        {/* Neck */}
+        <mesh position={[0, 1.56, 0]} castShadow>
+          <cylinderGeometry args={[0.06, 0.07, 0.12, 8]} />
+          <meshStandardMaterial color="#d4a574" roughness={0.8} />
+        </mesh>
+        {/* Torso (black coat) */}
+        <mesh position={[0, 1.25, 0]} castShadow>
+          <boxGeometry args={[0.42, 0.55, 0.24]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
+        </mesh>
+        {/* Coat lower (long trench) */}
+        <mesh position={[0, 0.75, 0]} castShadow>
+          <boxGeometry args={[0.44, 0.5, 0.26]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
+        </mesh>
+        {/* Coat tail (goes past knees) */}
+        <mesh position={[0, 0.35, -0.04]} castShadow>
+          <boxGeometry args={[0.40, 0.35, 0.18]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
+        </mesh>
+        {/* Left arm */}
+        <mesh position={[-0.28, 1.18, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.55, 0.14]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
+        </mesh>
+        {/* Right arm */}
+        <mesh position={[0.28, 1.18, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.55, 0.14]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
+        </mesh>
+        {/* Left leg */}
+        <mesh position={[-0.1, 0.38, 0]} castShadow>
+          <boxGeometry args={[0.16, 0.76, 0.18]} />
+          <meshStandardMaterial color="#111111" roughness={0.9} />
+        </mesh>
+        {/* Right leg */}
+        <mesh position={[0.1, 0.38, 0]} castShadow>
+          <boxGeometry args={[0.16, 0.76, 0.18]} />
+          <meshStandardMaterial color="#111111" roughness={0.9} />
         </mesh>
       </group>
 
-      {/* Neo Placeholder (Left Side, closer to camera, facing Architect) */}
-      <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
-        {/* Neo Figure (Standing) */}
-        <mesh position={[0, 1.8, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.4, 0.4, 3.6, 16]} />
-          <meshStandardMaterial color="#0c11f0" roughness={0.8} />
+      {/* ── The Architect (Seated, right side) ────────────────────── */}
+      <group position={ARCHITECT_CONFIG.architectPosition} rotation={ARCHITECT_CONFIG.architectRotation}>
+        {/* ─ High-back chair ─ */}
+        {/* Seat cushion */}
+        <mesh position={[0, 0.52, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.7, 0.1, 0.65]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.85} />
+        </mesh>
+        {/* Chair back */}
+        <mesh position={[0, 0.95, -0.3]} castShadow>
+          <boxGeometry args={[0.68, 0.85, 0.08]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.85} />
+        </mesh>
+        {/* Left armrest */}
+        <mesh position={[-0.35, 0.62, -0.08]} castShadow>
+          <boxGeometry args={[0.06, 0.06, 0.45]} />
+          <meshStandardMaterial color="#222" roughness={0.8} />
+        </mesh>
+        {/* Right armrest */}
+        <mesh position={[0.35, 0.62, -0.08]} castShadow>
+          <boxGeometry args={[0.06, 0.06, 0.45]} />
+          <meshStandardMaterial color="#222" roughness={0.8} />
+        </mesh>
+        {/* Chair legs (4) */}
+        <mesh position={[-0.28, 0.22, 0.25]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
+          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
+        </mesh>
+        <mesh position={[0.28, 0.22, 0.25]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
+          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
+        </mesh>
+        <mesh position={[-0.28, 0.22, -0.25]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
+          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
+        </mesh>
+        <mesh position={[0.28, 0.22, -0.25]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
+          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
+        </mesh>
+
+        {/* ─ Architect figure (seated) ─ */}
+        {/* Head */}
+        <mesh position={[0, 1.42, -0.05]} castShadow>
+          <sphereGeometry args={[0.14, 12, 8]} />
+          <meshStandardMaterial color="#d4a574" roughness={0.8} />
+        </mesh>
+        {/* White hair */}
+        <mesh position={[0, 1.5, -0.08]} castShadow>
+          <sphereGeometry args={[0.145, 8, 6]} />
+          <meshStandardMaterial color="#e8e8e8" roughness={0.95} />
+        </mesh>
+        {/* Beard */}
+        <mesh position={[0, 1.34, 0.08]}>
+          <boxGeometry args={[0.14, 0.1, 0.06]} />
+          <meshStandardMaterial color="#cccccc" roughness={0.95} />
+        </mesh>
+        {/* Neck */}
+        <mesh position={[0, 1.26, -0.02]} castShadow>
+          <cylinderGeometry args={[0.06, 0.07, 0.1, 8]} />
+          <meshStandardMaterial color="#d4a574" roughness={0.8} />
+        </mesh>
+        {/* Torso — light grey suit jacket */}
+        <mesh position={[0, 1.0, -0.05]} castShadow>
+          <boxGeometry args={[0.44, 0.45, 0.26]} />
+          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
+        </mesh>
+        {/* Vest (darker layer) */}
+        <mesh position={[0, 1.0, 0.06]}>
+          <boxGeometry args={[0.30, 0.38, 0.06]} />
+          <meshStandardMaterial color="#999999" roughness={0.7} />
+        </mesh>
+        {/* Tie */}
+        <mesh position={[0, 1.02, 0.1]}>
+          <boxGeometry args={[0.06, 0.32, 0.02]} />
+          <meshStandardMaterial color="#888888" roughness={0.5} />
+        </mesh>
+        {/* Left arm (resting on armrest) */}
+        <mesh position={[-0.3, 0.85, 0.05]} castShadow>
+          <boxGeometry args={[0.12, 0.45, 0.14]} />
+          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
+        </mesh>
+        {/* Right arm */}
+        <mesh position={[0.3, 0.85, 0.05]} castShadow>
+          <boxGeometry args={[0.12, 0.45, 0.14]} />
+          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
+        </mesh>
+        {/* Lap / upper legs (seated, horizontal) */}
+        <mesh position={[-0.1, 0.56, 0.15]} castShadow>
+          <boxGeometry args={[0.16, 0.1, 0.45]} />
+          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
+        </mesh>
+        <mesh position={[0.1, 0.56, 0.15]} castShadow>
+          <boxGeometry args={[0.16, 0.1, 0.45]} />
+          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
+        </mesh>
+        {/* Lower legs (hanging down) */}
+        <mesh position={[-0.1, 0.25, 0.35]} castShadow>
+          <boxGeometry args={[0.14, 0.5, 0.14]} />
+          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
+        </mesh>
+        <mesh position={[0.1, 0.25, 0.35]} castShadow>
+          <boxGeometry args={[0.14, 0.5, 0.14]} />
+          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
+        </mesh>
+        {/* Shoes */}
+        <mesh position={[-0.1, 0.02, 0.4]}>
+          <boxGeometry args={[0.14, 0.06, 0.22]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
+        </mesh>
+        <mesh position={[0.1, 0.02, 0.4]}>
+          <boxGeometry args={[0.14, 0.06, 0.22]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
         </mesh>
       </group>
 
