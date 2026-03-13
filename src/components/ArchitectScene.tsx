@@ -48,16 +48,16 @@ const COUNT_LIMIT = 800;
 // The door is at roughly Z = -19.6
 export const ARCHITECT_CONFIG = {
   // Moving the camera further back (+) increases how much of the room you see 
-  cameraHome: new THREE.Vector3(0, 1.8, 15), 
+  cameraHome: new THREE.Vector3(0, 1.6, 0), 
   cameraLerpSpeed: 0.06,
 
   // Position of Neo's Placeholder 
   // [X (left/right), Y (up/down), Z (forward/back)]
-  neoPosition: [-4, 0, -2] as [number, number, number],
+  neoPosition: [-4, 0, -3] as [number, number, number],
   neoRotation: [0, Math.PI / 3, 0] as [number, number, number],
 
-  // Position of the Architect's Placeholder near the door
-  architectPosition: [4, 0, -16] as [number, number, number],
+  // Position of the Architect's Placeholder near the monitors
+  architectPosition: [4, 0, -14] as [number, number, number],
   architectRotation: [0, -Math.PI / 4, 0] as [number, number, number],
 };
 
@@ -76,8 +76,9 @@ function buildPositions(): MonitorPosition[] {
   const pos: MonitorPosition[] = [];
   for (let r = 0; r < ROWS; r++) {
     for (let i = 0; i < ITEMS_PER_ROW; i++) {
-      const mid = ITEMS_PER_ROW / 2;
-      const isDoorGap = r < 3 && i >= mid - 2 && i <= mid + 1;
+      const mid = Math.floor(ITEMS_PER_ROW / 2); // 25
+      // Remove exactly 3 columns (24, 25, 26) up to row 4
+      const isDoorGap = r < 4 && i >= mid - 1 && i <= mid + 1;
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
         const angle = (i / (ITEMS_PER_ROW - 1)) * Math.PI - Math.PI / 2;
         pos.push({
@@ -338,14 +339,14 @@ interface DoorProps {
 }
 
 function Door({ onClick, hovered, onHover }: DoorProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const innerRef = useRef<THREE.Group>(null);
 
-  // Subtle float toward viewer on hover
+  // Subtle float toward viewer on hover relative to inner group
   useFrame(() => {
-    if (!groupRef.current) return;
-    const targetZ = hovered ? 0.12 : 0;
-    groupRef.current.position.z = THREE.MathUtils.lerp(
-      groupRef.current.position.z,
+    if (!innerRef.current) return;
+    const targetZ = hovered ? 0.3 : 0;
+    innerRef.current.position.z = THREE.MathUtils.lerp(
+      innerRef.current.position.z,
       targetZ,
       0.1
     );
@@ -390,61 +391,57 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
 
   return (
     <group
-      ref={groupRef}
-      position={[0, 1.5, -19.6]}
+      position={[0, 1.5, -20]}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={() => { onHover(true); document.body.style.cursor = "pointer"; }}
       onPointerOut={() => { onHover(false); document.body.style.cursor = "auto"; }}
     >
-      {/* Outer frame */}
-      <mesh castShadow receiveShadow position={[0, 0, -0.12]}>
-        <boxGeometry args={[2.3, 3.3, 0.18]} />
-        <primitive object={frameMat} attach="material" />
-      </mesh>
+      <group ref={innerRef}>
+        {/* Outer frame */}
+        <mesh castShadow receiveShadow position={[0, 0, -0.12]}>
+          <boxGeometry args={[3.6, 4.0, 0.18]} />
+          <primitive object={frameMat} attach="material" />
+        </mesh>
 
-      {/* Door pane */}
-      <mesh castShadow receiveShadow position={[0, 0, 0]}>
-        <boxGeometry args={[2.0, 3.0, 0.08]} />
-        <primitive object={paneMat} attach="material" />
-      </mesh>
+        {/* Door pane */}
+        <mesh castShadow receiveShadow position={[0, 0, 0]}>
+          <boxGeometry args={[3.3, 3.7, 0.08]} />
+          <primitive object={paneMat} attach="material" />
+        </mesh>
 
-      {/* Top trim strip — emissive accent line */}
-      <mesh position={[0, 1.56, 0.05]}>
-        <boxGeometry args={[2.04, 0.04, 0.06]} />
-        <primitive object={trimMat} attach="material" />
-      </mesh>
-      {/* Bottom trim */}
-      <mesh position={[0, -1.56, 0.05]}>
-        <boxGeometry args={[2.04, 0.04, 0.06]} />
-        <primitive object={trimMat} attach="material" />
-      </mesh>
-      {/* Left trim */}
-      <mesh position={[-1.02, 0, 0.05]}>
-        <boxGeometry args={[0.04, 3.08, 0.06]} />
-        <primitive object={trimMat} attach="material" />
-      </mesh>
-      {/* Right trim */}
-      <mesh position={[1.02, 0, 0.05]}>
-        <boxGeometry args={[0.04, 3.08, 0.06]} />
-        <primitive object={trimMat} attach="material" />
-      </mesh>
+        {/* Top trim strip */}
+        <mesh position={[0, 1.88, 0.05]}>
+          <boxGeometry args={[3.34, 0.05, 0.06]} />
+          <primitive object={trimMat} attach="material" />
+        </mesh>
+        {/* Bottom trim */}
+        <mesh position={[0, -1.88, 0.05]}>
+          <boxGeometry args={[3.34, 0.05, 0.06]} />
+          <primitive object={trimMat} attach="material" />
+        </mesh>
+        {/* Left trim */}
+        <mesh position={[-1.67, 0, 0.05]}>
+          <boxGeometry args={[0.05, 3.8, 0.06]} />
+          <primitive object={trimMat} attach="material" />
+        </mesh>
+        {/* Right trim */}
+        <mesh position={[1.67, 0, 0.05]}>
+          <boxGeometry args={[0.05, 3.8, 0.06]} />
+          <primitive object={trimMat} attach="material" />
+        </mesh>
 
-      {/* Doorknob — premium sphere */}
-      <mesh castShadow position={[0.78, 0, 0.1]}>
-        <sphereGeometry args={[0.07, 32, 32]} />
-        <meshStandardMaterial
-          color="#aaaaaa"
-          metalness={0.95}
-          roughness={0.05}
-          envMapIntensity={1}
-        />
-      </mesh>
+        {/* Doorknob */}
+        <mesh castShadow position={[1.35, 0, 0.1]}>
+          <sphereGeometry args={[0.09, 32, 32]} />
+          <meshStandardMaterial color="#aaaaaa" metalness={0.95} roughness={0.05} />
+        </mesh>
 
-      {/* Knob backplate */}
-      <mesh position={[0.78, 0, 0.06]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.02, 32]} />
-        <meshStandardMaterial color="#999999" metalness={0.8} roughness={0.1} />
-      </mesh>
+        {/* Knob backplate */}
+        <mesh position={[1.35, 0, 0.06]}>
+          <cylinderGeometry args={[0.12, 0.12, 0.02, 32]} />
+          <meshStandardMaterial color="#999999" metalness={0.8} roughness={0.1} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -692,7 +689,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 1.8, 15], fov: 60 }}
+        camera={{ position: [0, 1.6, 0], fov: 60 }}
         gl={{
           antialias: true,
           powerPreference: "high-performance",
