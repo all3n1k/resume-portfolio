@@ -544,6 +544,27 @@ function Scene({
   onDoorHover,
   onDoorClick,
 }: SceneProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orbitRef = useRef<any>(null);
+  const { camera } = useThree();
+
+  // Disable OrbitControls while camera is animating toward a monitor
+  useEffect(() => {
+    if (orbitRef.current) {
+      orbitRef.current.enabled = !cameraTarget;
+    }
+  }, [cameraTarget]);
+
+  // Point camera forward into the scene on first load
+  useEffect(() => {
+    camera.lookAt(0, 1.6, -10);
+    if (orbitRef.current) {
+      orbitRef.current.target.set(0, 1.6, -10);
+      orbitRef.current.update();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
       <CameraRig target={cameraTarget} onArrived={onCameraArrived} />
@@ -774,7 +795,7 @@ function Scene({
 
       {/* OrbitControls — look-only, no pan/zoom */}
       <OrbitControls
-        target={[0, 1.6, -10]}
+        ref={orbitRef}
         enablePan={false}
         enableZoom={false}
         enableDamping
