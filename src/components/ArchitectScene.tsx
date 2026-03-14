@@ -208,6 +208,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
+    meshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
   const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -221,7 +222,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
       const p = positions[id];
       // Compute world position in front of that monitor
       const angle = p.angle;
-      const camOffset = 3.5;
+      const camOffset = 2.5; // fly slightly closer to the screen
       const worldPos = new THREE.Vector3(
         p.x - Math.sin(angle) * camOffset,
         p.y,
@@ -234,13 +235,13 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   );
 
   // Invisible hit-box geometry for reliable raycasting & hover glow
-  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.2, 0.8, 1.2), []);
+  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.25, 0.85, 1.25), []);
   const hitMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
         color: "#ffffff",
         transparent: true,
-        opacity: 0, // completely invisible unless hovered
+        blending: THREE.AdditiveBlending,
         depthWrite: false, 
       }),
     []
@@ -253,9 +254,9 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   useFrame(() => {
     if (!hitMeshRef.current) return;
     for (let i = 0; i < positions.length; i++) {
-      // Glow brightly if hovered, otherwise invisible
-      const targetOpacity = i === hoveredId ? 0.15 : 0;
-      color.setRGB(targetOpacity, targetOpacity * 2, targetOpacity); // green-ish white glow
+      // Additive blending: Black is invisible. Glow brightly if hovered.
+      const hoverStr = i === hoveredId ? 0.35 : 0;
+      color.setRGB(hoverStr * 0.5, hoverStr, hoverStr * 0.5); // neon green glow
       hitMeshRef.current.setColorAt(i, color);
     }
     if (hitMeshRef.current.instanceColor) {
@@ -277,6 +278,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     if (hitMeshRef.current.instanceColor) {
       hitMeshRef.current.instanceColor.needsUpdate = true;
     }
+    hitMeshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
   return (
@@ -352,6 +354,7 @@ function GreenScreens({ positions }: GreenScreensProps) {
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
+    meshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
   return (
@@ -390,6 +393,7 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
+    meshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
   return (
