@@ -7,6 +7,11 @@ interface LandingDoorSequenceProps {
   children: React.ReactNode;
 }
 
+// Video pool — every monitor cycles through these on click
+const SCREEN_VIDEOS = [
+  "/Screenvideos/SCREENCONTENT.mp4",
+];
+
 export default function LandingDoorSequence({ children }: LandingDoorSequenceProps) {
   const [entered, setEntered] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
@@ -31,7 +36,7 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     <div className="relative w-full h-screen overflow-hidden">
       {/* 3D Scene */}
       <div className={`transition-opacity duration-700 ${transitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}>
-        <ArchitectScene onDoorClick={handleDoorClick} />
+        <ArchitectScene onDoorClick={handleDoorClick} videoPaths={SCREEN_VIDEOS} />
       </div>
     </div>
   );

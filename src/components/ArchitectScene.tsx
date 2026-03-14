@@ -47,18 +47,18 @@ const COUNT_LIMIT = 800;
 // Change these offsets to visually re-arrange the characters and camera!
 // The door is at roughly Z = -19.6
 export const ARCHITECT_CONFIG = {
-  // Moving the camera further back (+) increases how much of the room you see 
+  // Camera starts at the center of the dome
   cameraHome: new THREE.Vector3(0, 1.6, 0), 
   cameraLerpSpeed: 0.06,
 
-  // Position of Neo's Placeholder 
+  // Neo on the LEFT side, angled slightly right toward Architect
   // [X (left/right), Y (up/down), Z (forward/back)]
-  neoPosition: [-4, 0, -3] as [number, number, number],
-  neoRotation: [0, Math.PI / 3, 0] as [number, number, number],
+  neoPosition: [-5, 0, -8] as [number, number, number],
+  neoRotation: [0, Math.PI / 6, 0] as [number, number, number], // slight turn right
 
-  // Position of the Architect's Placeholder near the monitors
-  architectPosition: [4, 0, -14] as [number, number, number],
-  architectRotation: [0, -Math.PI / 4, 0] as [number, number, number],
+  // Architect on the RIGHT side, angled slightly left toward Neo
+  architectPosition: [5, 0, -8] as [number, number, number],
+  architectRotation: [0, -Math.PI / 6, 0] as [number, number, number], // slight turn left
 };
 
 // Fake agent lines for each "screen type" (cycles via index % AGENT_LINES.length)
@@ -224,6 +224,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
       args={[caseGeo, caseMat, positions.length]}
       castShadow
       receiveShadow
+      frustumCulled={false}
       onClick={handleClick}
       onPointerOver={() => (document.body.style.cursor = "pointer")}
       onPointerOut={() => (document.body.style.cursor = "auto")}
@@ -274,7 +275,7 @@ function GreenScreens({ positions }: GreenScreensProps) {
   }, [positions, dummy]);
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, screenMat, positions.length]}>
+    <instancedMesh ref={meshRef} args={[undefined, screenMat, positions.length]} frustumCulled={false}>
       <planeGeometry args={[0.92, 0.64]} />
     </instancedMesh>
   );
@@ -312,7 +313,7 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
   }, [positions, dummy]);
 
   return (
-    <instancedMesh ref={meshRef} args={[bezelGeo, bezelMat, positions.length]} />
+    <instancedMesh ref={meshRef} args={[bezelGeo, bezelMat, positions.length]} frustumCulled={false} />
   );
 }
 
@@ -773,6 +774,7 @@ function Scene({
 
       {/* OrbitControls — look-only, no pan/zoom */}
       <OrbitControls
+        target={[0, 1.6, -10]}
         enablePan={false}
         enableZoom={false}
         enableDamping
