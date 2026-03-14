@@ -210,8 +210,9 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     meshRef.current.instanceMatrix.needsUpdate = true;
   }, [positions, dummy]);
 
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+
   const handleClick = useCallback(
-    // Three/fiber events extend standard DOM events with custom properties
     (e: unknown) => {
       const event = e as { stopPropagation: () => void; instanceId?: number };
       event.stopPropagation();
@@ -232,17 +233,82 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     [positions, onMonitorClick]
   );
 
+  // Invisible hit-box geometry for reliable raycasting & hover glow
+  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.2, 0.8, 1.2), []);
+  const hitMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: "#ffffff",
+        transparent: true,
+        opacity: 0, // completely invisible unless hovered
+        depthWrite: false, 
+      }),
+    []
+  );
+
+  const hitMeshRef = useRef<THREE.InstancedMesh>(null);
+  const color = useMemo(() => new THREE.Color(), []);
+
+  // Update hover glow color per instance
+  useFrame(() => {
+    if (!hitMeshRef.current) return;
+    for (let i = 0; i < positions.length; i++) {
+      // Glow brightly if hovered, otherwise invisible
+      const targetOpacity = i === hoveredId ? 0.15 : 0;
+      color.setRGB(targetOpacity, targetOpacity * 2, targetOpacity); // green-ish white glow
+      hitMeshRef.current.setColorAt(i, color);
+    }
+    if (hitMeshRef.current.instanceColor) {
+      hitMeshRef.current.instanceColor.needsUpdate = true;
+    }
+  });
+
+  // Set matrices for hit geometry
+  useEffect(() => {
+    if (!hitMeshRef.current) return;
+    positions.forEach((p, i) => {
+      dummy.position.set(p.x, p.y, p.z);
+      dummy.lookAt(0, p.y, 0);
+      dummy.updateMatrix();
+      hitMeshRef.current!.setMatrixAt(i, dummy.matrix);
+      hitMeshRef.current!.setColorAt(i, new THREE.Color(0x000000));
+    });
+    hitMeshRef.current.instanceMatrix.needsUpdate = true;
+    if (hitMeshRef.current.instanceColor) {
+      hitMeshRef.current.instanceColor.needsUpdate = true;
+    }
+  }, [positions, dummy]);
+
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[caseGeo, caseMat, positions.length]}
-      castShadow
-      receiveShadow
-      frustumCulled={false}
-      onClick={handleClick}
-      onPointerOver={() => (document.body.style.cursor = "pointer")}
-      onPointerOut={() => (document.body.style.cursor = "auto")}
-    />
+    <>
+      <instancedMesh
+        ref={meshRef}
+        args={[caseGeo, caseMat, positions.length]}
+        castShadow
+        receiveShadow
+        frustumCulled={false}
+      />
+      
+      {/* Hit-test and hover glow mesh */}
+      <instancedMesh
+        ref={hitMeshRef}
+        args={[hitGeo, hitMat, positions.length]}
+        frustumCulled={false}
+        onClick={handleClick}
+        onPointerOver={(e: unknown) => {
+          const event = e as { stopPropagation: () => void; instanceId?: number };
+          event.stopPropagation();
+          document.body.style.cursor = "pointer";
+          if (event.instanceId !== undefined) setHoveredId(event.instanceId);
+        }}
+        onPointerOut={(e: unknown) => {
+          const event = e as { stopPropagation: () => void };
+          event.stopPropagation();
+          document.body.style.cursor = "auto";
+          setHoveredId(null);
+        }}
+      />
+    </>
   );
 }
 
