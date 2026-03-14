@@ -49,6 +49,7 @@ const COUNT_LIMIT = 800;
 export const ARCHITECT_CONFIG = {
   // Camera starts at the center of the dome
   cameraHome: new THREE.Vector3(0, 1.6, 0), 
+  cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
   cameraLerpSpeed: 0.06,
 
   // Neo on the LEFT side, angled slightly right toward Architect
@@ -131,22 +132,34 @@ function buildScreenTexture(agentIndex: number): THREE.CanvasTexture {
 // ─── Camera animation controller ─────────────────────────────────────────────
 
 interface CameraRigProps {
-  target: THREE.Vector3 | null;
+  targetPos: THREE.Vector3 | null;
+  targetLookAt: THREE.Vector3 | null;
   onArrived: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  orbitRef: React.MutableRefObject<any>;
 }
 
-function CameraRig({ target, onArrived }: CameraRigProps) {
+function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigProps) {
   const { camera } = useThree();
   const arrived = useRef(false);
 
-  useEffect(() => { arrived.current = false; }, [target]);
+  useEffect(() => { arrived.current = false; }, [targetPos]);
 
   useFrame(() => {
-    if (!target) return;
-    camera.position.lerp(target, ARCHITECT_CONFIG.cameraLerpSpeed);
-    if (camera.position.distanceTo(target) < 0.05 && !arrived.current) {
+    if (!targetPos || !targetLookAt || !orbitRef.current) return;
+    
+    // Lerp position
+    camera.position.lerp(targetPos, ARCHITECT_CONFIG.cameraLerpSpeed);
+    
+    // Lerp OrbitControls target (which dictates where camera looks)
+    orbitRef.current.target.lerp(targetLookAt, ARCHITECT_CONFIG.cameraLerpSpeed);
+    orbitRef.current.update();
+
+    if (camera.position.distanceTo(targetPos) < 0.05 && !arrived.current) {
       arrived.current = true;
-      camera.position.copy(target);
+      camera.position.copy(targetPos);
+      orbitRef.current.target.copy(targetLookAt);
+      orbitRef.current.update();
       onArrived();
     }
   });
@@ -158,7 +171,7 @@ function CameraRig({ target, onArrived }: CameraRigProps) {
 
 interface CRTWallProps {
   positions: MonitorPosition[];
-  onMonitorClick: (instanceId: number, worldPos: THREE.Vector3) => void;
+  onMonitorClick: (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => void;
 }
 
 function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
@@ -213,7 +226,8 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
         p.y,
         p.z + Math.cos(angle) * camOffset
       );
-      onMonitorClick(id, worldPos);
+      const lookAtPos = new THREE.Vector3(p.x, p.y, p.z);
+      onMonitorClick(id, worldPos, lookAtPos);
     },
     [positions, onMonitorClick]
   );
@@ -528,8 +542,9 @@ function VideoOverlay({ src, onClose }: VideoOverlayProps) {
 interface SceneProps {
   positions: MonitorPosition[];
   cameraTarget: THREE.Vector3 | null;
+  cameraLookAt: THREE.Vector3 | null;
   onCameraArrived: () => void;
-  onMonitorClick: (id: number, worldPos: THREE.Vector3) => void;
+  onMonitorClick: (id: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => void;
   doorHovered: boolean;
   onDoorHover: (h: boolean) => void;
   onDoorClick: () => void;
@@ -538,6 +553,7 @@ interface SceneProps {
 function Scene({
   positions,
   cameraTarget,
+  cameraLookAt,
   onCameraArrived,
   onMonitorClick,
   doorHovered,
@@ -557,9 +573,10 @@ function Scene({
 
   // Point camera forward into the scene on first load
   useEffect(() => {
-    camera.lookAt(0, 1.6, -10);
+    const homeLookAt = ARCHITECT_CONFIG.cameraLookAtHome;
+    camera.lookAt(homeLookAt);
     if (orbitRef.current) {
-      orbitRef.current.target.set(0, 1.6, -10);
+      orbitRef.current.target.copy(homeLookAt);
       orbitRef.current.update();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,7 +584,12 @@ function Scene({
 
   return (
     <>
-      <CameraRig target={cameraTarget} onArrived={onCameraArrived} />
+      <CameraRig 
+         targetPos={cameraTarget} 
+         targetLookAt={cameraLookAt} 
+         orbitRef={orbitRef} 
+         onArrived={onCameraArrived} 
+      />
       <BakeShadows />
 
       {/* Lighting */}
@@ -815,6 +837,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
+  const [cameraLookAtTarget, setCameraLookAtTarget] = useState<THREE.Vector3 | null>(null);
   const [videoVisible, setVideoVisible] = useState(false);
   const [doorHovered, setDoorHovered] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
@@ -829,11 +852,12 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   );
 
   const handleMonitorClick = useCallback(
-    (instanceId: number, worldPos: THREE.Vector3) => {
+    (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => {
       if (isReturning || activeScreen) return;
       const src = getVideoSrc(instanceId);
       setActiveScreen({ instanceId, worldPosition: worldPos, videoSrc: src });
       setCameraTarget(worldPos);
+      setCameraLookAtTarget(lookAtPos);
     },
     [isReturning, activeScreen, getVideoSrc]
   );
@@ -844,6 +868,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       // Finished returning home
       setIsReturning(false);
       setCameraTarget(null);
+      setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
       // Finished moving toward monitor — show video
@@ -856,6 +881,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
     setIsReturning(true);
     // Animate camera back to home position
     setCameraTarget(ARCHITECT_CONFIG.cameraHome.clone());
+    setCameraLookAtTarget(ARCHITECT_CONFIG.cameraLookAtHome.clone());
   }, []);
 
   return (
@@ -876,6 +902,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
         <Scene
           positions={positions}
           cameraTarget={cameraTarget}
+          cameraLookAt={cameraLookAtTarget}
           onCameraArrived={handleCameraArrived}
           onMonitorClick={handleMonitorClick}
           doorHovered={doorHovered}
