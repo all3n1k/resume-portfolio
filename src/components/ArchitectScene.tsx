@@ -89,19 +89,25 @@ function buildPositions(): MonitorPosition[] {
     const rowY      = SPHERE_Y + RADIUS * Math.sin(phi);
     // Fewer monitors per row as the ring gets smaller — keeps spacing consistent
     const rowItems  = Math.max(5, Math.round(ITEMS_PER_ROW * Math.cos(phi)));
-    const mid       = Math.floor(rowItems / 2);
 
     for (let i = 0; i < rowItems; i++) {
-      // Door gap only on the 4 lowest rows where the door physically sits
-      const isDoorGap = r < 4 && i >= mid - 1 && i <= mid + 1;
+      const angle = (i / rowItems) * 2 * Math.PI - Math.PI;
+      const x = Math.sin(angle) * rowRadius;
+      const y = rowY;
+      const z = -Math.cos(angle) * rowRadius;
+
+      // Cut out a clean rectangular gap for the door on the front wall
+      // Door frame occupies approx X: -1.8 to 1.8, Y: -0.5 to 3.5, Z < 0
+      // We add padding (buffer for monitor size + visual gap)
+      const isDoorGap = Math.abs(x) < 2.4 && y < 4.05 && z < 0;
+
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
-        const angle = (i / rowItems) * 2 * Math.PI - Math.PI;
         pos.push({
-          x: Math.sin(angle) * rowRadius,
-          y: rowY,
-          z: -Math.cos(angle) * rowRadius,
+          x,
+          y,
+          z,
           angle,
-          lookAtY: 1.6, // all monitors face viewer's eye level — wall ones barely tilt, ceiling ones face down
+          lookAtY: 1.6, // all monitors face viewer's eye level
         });
       }
     }
