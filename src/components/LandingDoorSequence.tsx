@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ArchitectScene from "./ArchitectScene";
 
 interface LandingDoorSequenceProps {
@@ -12,32 +12,197 @@ const SCREEN_VIDEOS = [
   "/Screenvideos/SCREENCONTENT.mp4",
 ];
 
-export default function LandingDoorSequence({ children }: LandingDoorSequenceProps) {
-  const [entered, setEntered] = useState(false);
-  const [transitioning, setTransitioning] = useState(false);
+// ─── Matrix Rain Transition Overlay ──────────────────────────────────────────
 
-  const handleDoorClick = () => {
-    setTransitioning(true);
-    // Wait for fade out animation before showing content
-    setTimeout(() => {
-      setEntered(true);
-    }, 800);
-  };
+const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  if (entered) {
-    return (
-      <div className="animate-in fade-in duration-1000 slide-in-from-bottom-4">
-        {children}
-      </div>
-    );
-  }
+interface MatrixRainProps {
+  onMidpoint: () => void;
+  onComplete: () => void;
+}
+
+function MatrixRain({ onMidpoint, onComplete }: MatrixRainProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [opacity, setOpacity] = useState(0);
+  const midpointFired = useRef(false);
+  const completeFired = useRef(false);
+
+  // Opacity animation: fade in → hold → fade out
+  useEffect(() => {
+    let frame: number;
+    const start = performance.now();
+    const FADE_IN = 700;
+    const HOLD = 1200;
+    const FADE_OUT = 900;
+    const TOTAL = FADE_IN + HOLD + FADE_OUT;
+
+    const tick = (now: number) => {
+      const t = now - start;
+
+      if (t < FADE_IN) {
+        setOpacity(t / FADE_IN);
+      } else if (t < FADE_IN + HOLD) {
+        setOpacity(1);
+        if (!midpointFired.current) {
+          midpointFired.current = true;
+          onMidpoint();
+        }
+      } else if (t < TOTAL) {
+        setOpacity(1 - (t - FADE_IN - HOLD) / FADE_OUT);
+      } else {
+        setOpacity(0);
+        if (!completeFired.current) {
+          completeFired.current = true;
+          onComplete();
+        }
+        return;
+      }
+
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [onMidpoint, onComplete]);
+
+  // Matrix rain canvas draw loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+
+    const W = canvas.width = window.innerWidth;
+    const H = canvas.height = window.innerHeight;
+    const COL_W = 18;
+    const cols = Math.ceil(W / COL_W);
+    const drops = Array.from({ length: cols }, () => Math.random() * -H / 16);
+
+    let raf: number;
+    let last = 0;
+    const INTERVAL = 40; // ~25fps for the rain
+
+    const draw = (now: number) => {
+      raf = requestAnimationFrame(draw);
+      if (now - last < INTERVAL) return;
+      last = now;
+
+      // Semi-transparent black trail
+      ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.font = `bold 14px monospace`;
+
+      drops.forEach((y, i) => {
+        const char = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+        const x = i * COL_W;
+
+        // Bright white head
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(char, x, y * 16);
+
+        // Green body
+        ctx.fillStyle = "#00ff41";
+        const trailChar = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+        ctx.fillText(trailChar, x, (y - 1) * 16);
+
+        // Dim tail
+        ctx.fillStyle = "#009922";
+        const tailChar = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+        ctx.fillText(tailChar, x, (y - 2) * 16);
+
+        drops[i] = y > H / 16 + Math.random() * 20 ? Math.random() * -20 : y + 1;
+      });
+    };
+
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* 3D Scene */}
-      <div className={`transition-opacity duration-700 ${transitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}>
-        <ArchitectScene onDoorClick={handleDoorClick} videoPaths={SCREEN_VIDEOS} />
-      </div>
-    </div>
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        opacity,
+        pointerEvents: "none",
+        background: "#000",
+      }}
+    />
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export default function LandingDoorSequence({ children }: LandingDoorSequenceProps) {
+  const [entered, setEntered] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const transitionAction = useRef<"enter" | "exit">("enter");
+
+  const handleDoorClick = useCallback(() => {
+    transitionAction.current = "enter";
+    setShowTransition(true);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    transitionAction.current = "exit";
+    setShowTransition(true);
+  }, []);
+
+  const handleMidpoint = useCallback(() => {
+    if (transitionAction.current === "enter") {
+      setEntered(true);
+    } else {
+      setEntered(false);
+    }
+  }, []);
+
+  const handleComplete = useCallback(() => {
+    setShowTransition(false);
+  }, []);
+
+  return (
+    <>
+      {showTransition && (
+        <MatrixRain onMidpoint={handleMidpoint} onComplete={handleComplete} />
+      )}
+
+      {entered ? (
+        <div className="relative">
+          <button
+            onClick={handleBack}
+            style={{
+              position: "fixed",
+              top: 20,
+              left: 20,
+              zIndex: 60,
+              background: "rgba(0,0,0,0.7)",
+              border: "1px solid rgba(0,255,65,0.4)",
+              color: "#00ff41",
+              fontFamily: "monospace",
+              fontSize: 13,
+              padding: "8px 16px",
+              borderRadius: 4,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              backdropFilter: "blur(8px)",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,255,65,0.12)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.7)")}
+          >
+            ← BACK
+          </button>
+          {children}
+        </div>
+      ) : (
+        <div className="relative w-full h-screen overflow-hidden">
+          <ArchitectScene onDoorClick={handleDoorClick} videoPaths={SCREEN_VIDEOS} />
+        </div>
+      )}
+    </>
   );
 }

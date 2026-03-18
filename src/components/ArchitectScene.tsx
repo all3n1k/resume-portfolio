@@ -16,6 +16,7 @@ interface MonitorPosition {
   y: number;
   z: number;
   angle: number;
+  lookAtY: number;
 }
 
 interface ActiveScreen {
@@ -37,18 +38,23 @@ interface ArchitectSceneProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RADIUS = 20;
-const ITEMS_PER_ROW = 51;
+const RADIUS = 14;
+const ITEMS_PER_ROW = 75;
 const ROWS = 12;
 const MONITOR_HEIGHT = 0.95;
-const COUNT_LIMIT = 800;
+const COUNT_LIMIT = 1200;
+// Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
+// so they all appear the same physical size regardless of latitude
+const SPHERE_Y   = 1.6;
+const PHI_START  = -4;  // degrees — bottom row sits just above the floor
+const PHI_END    = 65;  // degrees — top row curves well overhead
 
 // ─── EASY-TWEAK POSITIONING CONTROLS ──────────────────────────────────────────
 // Change these offsets to visually re-arrange the characters and camera!
 // The door is at roughly Z = -19.6
 export const ARCHITECT_CONFIG = {
   // Camera starts at the center of the dome
-  cameraHome: new THREE.Vector3(0, 1.6, 0), 
+  cameraHome: new THREE.Vector3(0, 1.6, 0),
   cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
   cameraLerpSpeed: 0.06,
 
@@ -75,22 +81,32 @@ const AGENT_LINES: string[][] = [
 
 function buildPositions(): MonitorPosition[] {
   const pos: MonitorPosition[] = [];
+
   for (let r = 0; r < ROWS; r++) {
-    for (let i = 0; i < ITEMS_PER_ROW; i++) {
-      const mid = Math.floor(ITEMS_PER_ROW / 2); // 25
-      // Remove exactly 3 columns (24, 25, 26) up to row 4
+    // Map each row to a latitude angle on a hemisphere
+    const phi = (PHI_START + (r / (ROWS - 1)) * (PHI_END - PHI_START)) * (Math.PI / 180);
+    const rowRadius = RADIUS * Math.cos(phi);
+    const rowY      = SPHERE_Y + RADIUS * Math.sin(phi);
+    // Fewer monitors per row as the ring gets smaller — keeps spacing consistent
+    const rowItems  = Math.max(5, Math.round(ITEMS_PER_ROW * Math.cos(phi)));
+    const mid       = Math.floor(rowItems / 2);
+
+    for (let i = 0; i < rowItems; i++) {
+      // Door gap only on the 4 lowest rows where the door physically sits
       const isDoorGap = r < 4 && i >= mid - 1 && i <= mid + 1;
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
-        const angle = (i / (ITEMS_PER_ROW - 1)) * Math.PI - Math.PI / 2;
+        const angle = (i / rowItems) * 2 * Math.PI - Math.PI;
         pos.push({
-          x: Math.sin(angle) * RADIUS,
-          y: r * MONITOR_HEIGHT + MONITOR_HEIGHT / 2 + 0.1,
-          z: -Math.cos(angle) * RADIUS,
+          x: Math.sin(angle) * rowRadius,
+          y: rowY,
+          z: -Math.cos(angle) * rowRadius,
           angle,
+          lookAtY: 1.6, // all monitors face viewer's eye level — wall ones barely tilt, ceiling ones face down
         });
       }
     }
   }
+
   return pos;
 }
 
@@ -203,7 +219,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     if (!meshRef.current) return;
     positions.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.y, 0);
+      dummy.lookAt(0, p.lookAtY, 0);
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
@@ -348,7 +364,7 @@ function GreenScreens({ positions }: GreenScreensProps) {
     if (!meshRef.current) return;
     positions.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.y, 0);
+      dummy.lookAt(0, p.lookAtY, 0);
       dummy.translateZ(0.6);
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
@@ -387,7 +403,7 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
     if (!meshRef.current) return;
     positions.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.y, 0);
+      dummy.lookAt(0, p.lookAtY, 0);
       dummy.translateZ(0.595); // just behind the screen plane
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
@@ -398,6 +414,25 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
 
   return (
     <instancedMesh ref={meshRef} args={[bezelGeo, bezelMat, positions.length]} frustumCulled={false} />
+  );
+}
+
+// ─── Room shell (dark cylinder + dome cap, rendered from inside) ──────────────
+
+function RoomShell() {
+  return (
+    <group>
+      {/* Cylindrical walls — radius just outside the monitor ring */}
+      <mesh>
+        <cylinderGeometry args={[15.5, 15.5, 20, 64, 1, true]} />
+        <meshStandardMaterial color="#111111" side={THREE.BackSide} roughness={0.9} />
+      </mesh>
+      {/* Dome cap — top hemisphere */}
+      <mesh position={[0, 10, 0]}>
+        <sphereGeometry args={[15.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#111111" side={THREE.BackSide} roughness={0.9} />
+      </mesh>
+    </group>
   );
 }
 
@@ -476,7 +511,7 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
 
   return (
     <group
-      position={[0, 1.5, -20]}
+      position={[0, 1.5, -13.95]}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={() => { onHover(true); document.body.style.cursor = "pointer"; }}
       onPointerOut={() => { onHover(false); document.body.style.cursor = "auto"; }}
@@ -539,6 +574,19 @@ interface VideoOverlayProps {
 }
 
 function VideoOverlay({ src, onClose }: VideoOverlayProps) {
+  const [opacity, setOpacity] = useState(0);
+
+  // Fade in on mount
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setOpacity(1));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setOpacity(0);
+    setTimeout(onClose, 500);
+  };
+
   return (
     <div
       style={{
@@ -548,11 +596,13 @@ function VideoOverlay({ src, onClose }: VideoOverlayProps) {
         zIndex: 50,
         display: "flex",
         flexDirection: "column",
+        opacity,
+        transition: "opacity 0.5s ease",
       }}
     >
       {/* Back button */}
       <button
-        onClick={onClose}
+        onClick={handleClose}
         style={{
           position: "absolute",
           top: 20,
@@ -681,8 +731,8 @@ function Scene({
       <ScreenGlow />
 
       {/* Background & fog */}
-      <color attach="background" args={["#ffffff"]} />
-      <fog attach="fog" args={["#ffffff", 14, 45]} />
+      <color attach="background" args={["#111111"]} />
+      <fog attach="fog" args={["#111111", 20, 45]} />
 
       {/* Reflective floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -696,11 +746,14 @@ function Scene({
           depthScale={1.2}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          color="#efefef"
+          color="#1a1a1a"
           metalness={0.12}
           mirror={1}
         />
       </mesh>
+
+      {/* Room shell */}
+      <RoomShell />
 
       {/* Monitor wall */}
       <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
@@ -885,7 +938,7 @@ function Scene({
         </mesh>
       </group>
 
-      {/* OrbitControls — look-only, no pan/zoom */}
+      {/* OrbitControls — look-only, no pan/zoom, locked to front 240° */}
       <OrbitControls
         ref={orbitRef}
         enablePan={false}
@@ -894,6 +947,8 @@ function Scene({
         dampingFactor={0.08}
         maxPolarAngle={Math.PI / 2 + 0.15}
         minPolarAngle={Math.PI / 6}
+        minAzimuthAngle={-Math.PI * 2 / 3}
+        maxAzimuthAngle={Math.PI * 2 / 3}
         rotateSpeed={0.45}
       />
     </>
@@ -911,6 +966,8 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const [videoVisible, setVideoVisible] = useState(false);
   const [doorHovered, setDoorHovered] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
+  const [isDoorApproach, setIsDoorApproach] = useState(false);
+  const pendingDoorCallback = useRef<(() => void) | null>(null);
 
   // Get video src for a given monitor instance
   const getVideoSrc = useCallback(
@@ -932,19 +989,30 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
     [isReturning, activeScreen, getVideoSrc]
   );
 
-  // Camera has finished moving toward the monitor
+  // Camera has finished moving
   const handleCameraArrived = useCallback(() => {
-    if (isReturning) {
-      // Finished returning home
+    if (isDoorApproach) {
+      setIsDoorApproach(false);
+      setCameraTarget(null);
+      setCameraLookAtTarget(null);
+      pendingDoorCallback.current?.();
+      pendingDoorCallback.current = null;
+    } else if (isReturning) {
       setIsReturning(false);
       setCameraTarget(null);
       setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
-      // Finished moving toward monitor — show video
       setVideoVisible(true);
     }
-  }, [isReturning]);
+  }, [isDoorApproach, isReturning]);
+
+  const handleDoorClick = useCallback(() => {
+    pendingDoorCallback.current = onDoorClick;
+    setIsDoorApproach(true);
+    setCameraTarget(new THREE.Vector3(0, 1.6, -9));
+    setCameraLookAtTarget(new THREE.Vector3(0, 1.5, -14));
+  }, [onDoorClick]);
 
   const handleCloseVideo = useCallback(() => {
     setVideoVisible(false);
@@ -955,7 +1023,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", background: "#fff" }}>
+    <div style={{ position: "relative", width: "100%", height: "100vh", background: "#111" }}>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -977,7 +1045,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           onMonitorClick={handleMonitorClick}
           doorHovered={doorHovered}
           onDoorHover={setDoorHovered}
-          onDoorClick={onDoorClick}
+          onDoorClick={handleDoorClick}
         />
       </Canvas>
 
@@ -994,7 +1062,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
             bottom: 24,
             left: "50%",
             transform: "translateX(-50%)",
-            color: "rgba(0,0,0,0.3)",
+            color: "rgba(255,255,255,0.3)",
             fontFamily: "monospace",
             fontSize: 11,
             letterSpacing: "0.12em",
