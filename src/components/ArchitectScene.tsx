@@ -40,14 +40,14 @@ interface ArchitectSceneProps {
 
 const RADIUS = 14;
 const ITEMS_PER_ROW = 75;
-const ROWS = 12;
+const ROWS = 18;
 const MONITOR_HEIGHT = 0.95;
 const COUNT_LIMIT = 1200;
 // Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
 // so they all appear the same physical size regardless of latitude
-const SPHERE_Y   = 1.6;
-const PHI_START  = -4;  // degrees — bottom row sits just above the floor
-const PHI_END    = 65;  // degrees — top row curves well overhead
+const SPHERE_Y = 1.6;
+const PHI_START = -4;  // degrees — bottom row sits just above the floor
+const PHI_END = 55;  // degrees — top row curves well overhead
 
 // ─── EASY-TWEAK POSITIONING CONTROLS ──────────────────────────────────────────
 // Change these offsets to visually re-arrange the characters and camera!
@@ -56,16 +56,16 @@ export const ARCHITECT_CONFIG = {
   // Camera starts at the center of the dome
   cameraHome: new THREE.Vector3(0, 1.6, 0),
   cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
-  cameraLerpSpeed: 0.06,
+  cameraLerpSpeed: 0.04,
 
   // Neo on the LEFT side, angled slightly right toward Architect
   // [X (left/right), Y (up/down), Z (forward/back)]
   neoPosition: [-5, 0, -8] as [number, number, number],
-  neoRotation: [0, Math.PI / 6, 0] as [number, number, number], // slight turn right
+  neoRotation: [0, Math.PI / 2, 0] as [number, number, number], // slight turn right
 
   // Architect on the RIGHT side, angled slightly left toward Neo
   architectPosition: [5, 0, -8] as [number, number, number],
-  architectRotation: [0, -Math.PI / 6, 0] as [number, number, number], // slight turn left
+  architectRotation: [0, -Math.PI / 2, 0] as [number, number, number], // slight turn left
 };
 
 // Fake agent lines for each "screen type" (cycles via index % AGENT_LINES.length)
@@ -86,9 +86,9 @@ function buildPositions(): MonitorPosition[] {
     // Map each row to a latitude angle on a hemisphere
     const phi = (PHI_START + (r / (ROWS - 1)) * (PHI_END - PHI_START)) * (Math.PI / 180);
     const rowRadius = RADIUS * Math.cos(phi);
-    const rowY      = SPHERE_Y + RADIUS * Math.sin(phi);
-    // Fewer monitors per row as the ring gets smaller — keeps spacing consistent
-    const rowItems  = Math.max(5, Math.round(ITEMS_PER_ROW * Math.cos(phi)));
+    const rowY = SPHERE_Y + RADIUS * Math.sin(phi);
+    // Force identical columns so the screens perfectly align vertically top-to-bottom
+    const rowItems = ITEMS_PER_ROW;
 
     for (let i = 0; i < rowItems; i++) {
       const angle = (i / rowItems) * 2 * Math.PI - Math.PI;
@@ -96,10 +96,8 @@ function buildPositions(): MonitorPosition[] {
       const y = rowY;
       const z = -Math.cos(angle) * rowRadius;
 
-      // Cut out a clean rectangular gap for the door on the front wall
-      // Door frame occupies approx X: -1.8 to 1.8, Y: -0.5 to 3.5, Z < 0
-      // We add padding (buffer for monitor size + visual gap)
-      const isDoorGap = Math.abs(x) < 2.4 && y < 4.05 && z < 0;
+      // Cut exactly around the new 2x4.2 proportion door
+      const isDoorGap = Math.abs(x) < 1.85 && y < 4.05 && z < 0;
 
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
         pos.push({
@@ -169,10 +167,10 @@ function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigPr
 
   useFrame(() => {
     if (!targetPos || !targetLookAt || !orbitRef.current) return;
-    
+
     // Lerp position
     camera.position.lerp(targetPos, ARCHITECT_CONFIG.cameraLerpSpeed);
-    
+
     // Lerp OrbitControls target (which dictates where camera looks)
     orbitRef.current.target.lerp(targetLookAt, ARCHITECT_CONFIG.cameraLerpSpeed);
     orbitRef.current.update();
@@ -264,7 +262,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
         color: "#ffffff",
         transparent: true,
         blending: THREE.AdditiveBlending,
-        depthWrite: false, 
+        depthWrite: false,
       }),
     []
   );
@@ -312,7 +310,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
         receiveShadow
         frustumCulled={false}
       />
-      
+
       {/* Hit-test and hover glow mesh */}
       <instancedMesh
         ref={hitMeshRef}
@@ -397,8 +395,8 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
       new THREE.MeshStandardMaterial({
         color: "#003300",
         emissive: "#00ff41",
-        emissiveIntensity: 0.12,
-        roughness: 0.9,
+        emissiveIntensity: 0.18,
+        roughness: 0.4,
       }),
     []
   );
@@ -517,7 +515,7 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
 
   return (
     <group
-      position={[0, 1.5, -13.95]}
+      position={[0, 1.6, -13.95]}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={() => { onHover(true); document.body.style.cursor = "pointer"; }}
       onPointerOut={() => { onHover(false); document.body.style.cursor = "auto"; }}
@@ -525,45 +523,45 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
       <group ref={innerRef}>
         {/* Outer frame */}
         <mesh castShadow receiveShadow position={[0, 0, -0.12]}>
-          <boxGeometry args={[3.6, 4.0, 0.18]} />
+          <boxGeometry args={[2.2, 4.8, 0.20]} />
           <primitive object={frameMat} attach="material" />
         </mesh>
 
         {/* Door pane */}
         <mesh castShadow receiveShadow position={[0, 0, 0]}>
-          <boxGeometry args={[3.3, 3.7, 0.08]} />
+          <boxGeometry args={[1.9, 4.7, 0.08]} />
           <primitive object={paneMat} attach="material" />
         </mesh>
 
         {/* Top trim strip */}
-        <mesh position={[0, 1.88, 0.05]}>
-          <boxGeometry args={[3.34, 0.05, 0.06]} />
+        <mesh position={[0, 1.98, 0.05]}>
+          <boxGeometry args={[1.94, 0.05, 0.06]} />
           <primitive object={trimMat} attach="material" />
         </mesh>
         {/* Bottom trim */}
-        <mesh position={[0, -1.88, 0.05]}>
-          <boxGeometry args={[3.34, 0.05, 0.06]} />
+        <mesh position={[0, -1.98, 0.05]}>
+          <boxGeometry args={[1.94, 0.05, 0.06]} />
           <primitive object={trimMat} attach="material" />
         </mesh>
         {/* Left trim */}
-        <mesh position={[-1.67, 0, 0.05]}>
-          <boxGeometry args={[0.05, 3.8, 0.06]} />
+        <mesh position={[-0.97, 0, 0.05]}>
+          <boxGeometry args={[0.05, 4.0, 0.06]} />
           <primitive object={trimMat} attach="material" />
         </mesh>
         {/* Right trim */}
-        <mesh position={[1.67, 0, 0.05]}>
-          <boxGeometry args={[0.05, 3.8, 0.06]} />
+        <mesh position={[0.97, 0, 0.05]}>
+          <boxGeometry args={[0.05, 4.0, 0.06]} />
           <primitive object={trimMat} attach="material" />
         </mesh>
 
         {/* Doorknob */}
-        <mesh castShadow position={[1.35, 0, 0.1]}>
+        <mesh castShadow position={[0.75, 0, 0.1]}>
           <sphereGeometry args={[0.09, 32, 32]} />
           <meshStandardMaterial color="#aaaaaa" metalness={0.95} roughness={0.05} />
         </mesh>
 
         {/* Knob backplate */}
-        <mesh position={[1.35, 0, 0.06]}>
+        <mesh position={[0.75, 0, 0.06]}>
           <cylinderGeometry args={[0.12, 0.12, 0.02, 32]} />
           <meshStandardMaterial color="#999999" metalness={0.8} roughness={0.1} />
         </mesh>
@@ -705,16 +703,16 @@ function Scene({
       orbitRef.current.target.copy(homeLookAt);
       orbitRef.current.update();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
-      <CameraRig 
-         targetPos={cameraTarget} 
-         targetLookAt={cameraLookAt} 
-         orbitRef={orbitRef} 
-         onArrived={onCameraArrived} 
+      <CameraRig
+        targetPos={cameraTarget}
+        targetLookAt={cameraLookAt}
+        orbitRef={orbitRef}
+        onArrived={onCameraArrived}
       />
       <BakeShadows />
 
@@ -752,7 +750,7 @@ function Scene({
           depthScale={1.2}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          color="#1a1a1a"
+          color="#ffffff"
           metalness={0.12}
           mirror={1}
         />
@@ -951,10 +949,12 @@ function Scene({
         enableZoom={false}
         enableDamping
         dampingFactor={0.08}
-        maxPolarAngle={Math.PI / 2 + 0.15}
-        minPolarAngle={Math.PI / 6}
-        minAzimuthAngle={-Math.PI * 2 / 3}
-        maxAzimuthAngle={Math.PI * 2 / 3}
+        // Tighten vertical (Y) movement to hide extreme ceiling/floor
+        maxPolarAngle={Math.PI / 2 + 0.05}
+        minPolarAngle={Math.PI / 2.2}
+        // Tighten horizontal (X) to 80 degrees total (40 left, 40 right)
+        minAzimuthAngle={-40 * (Math.PI / 180)}
+        maxAzimuthAngle={40 * (Math.PI / 180)}
         rotateSpeed={0.45}
       />
     </>
@@ -1033,7 +1033,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 1.6, 0], fov: 60 }}
+        camera={{ position: [0, 1.6, 0], fov: 50 }}
         gl={{
           antialias: true,
           powerPreference: "high-performance",
