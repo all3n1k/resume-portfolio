@@ -8,6 +8,7 @@ import {
   OrbitControls,
 } from "@react-three/drei";
 import * as THREE from "three";
+import { Model as NeoModel } from "./NeoModel";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,8 +97,8 @@ function buildPositions(): MonitorPosition[] {
       const y = rowY;
       const z = -Math.cos(angle) * rowRadius;
 
-      // Cut exactly around the new 2x4.2 proportion door
-      const isDoorGap = Math.abs(x) < 1.85 && y < 4.05 && z < 0;
+      // Cut exactly around the new shorter door
+      const isDoorGap = Math.abs(x) < 1.6 && y < 3.85 && z < 0;
 
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
         pos.push({
@@ -289,7 +290,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     if (!hitMeshRef.current) return;
     positions.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.y, 0);
+      dummy.lookAt(0, p.lookAtY, 0);
       dummy.updateMatrix();
       hitMeshRef.current!.setMatrixAt(i, dummy.matrix);
       hitMeshRef.current!.setColorAt(i, new THREE.Color(0x000000));
@@ -338,31 +339,37 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
 
 interface GreenScreensProps {
   positions: MonitorPosition[];
+  videoPaths: string[];
 }
 
-function GreenScreens({ positions }: GreenScreensProps) {
+function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // Build 5 unique agent textures, share across monitors
-  const textures = useMemo(() => {
-    if (typeof window === "undefined") return [];
-    return Array.from({ length: 5 }, (_, i) => buildScreenTexture(i));
-  }, []);
+  // Map the first Focusee MP4 to a permanent looping video texture spanning all screens
+  const screenMat = useMemo(() => {
+    if (typeof window !== "undefined" && videoPaths.length > 0) {
+      const vid = document.createElement("video");
+      vid.src = videoPaths[0]; // Share the first video stream
+      vid.crossOrigin = "Anonymous";
+      vid.loop = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      // Autoplay silently
+      vid.play().catch((err) => console.log("Autoplay prevented:", err));
+      
+      const tex = new THREE.VideoTexture(vid);
+      tex.colorSpace = THREE.SRGBColorSpace;
 
-  // We use a single shared "average" texture on the instanced mesh.
-  // For per-instance textures you'd need a custom shader — this gives
-  // a great look at scale without the overhead.
-  const screenMat = useMemo(
-    () =>
-      textures[0]
-        ? new THREE.MeshBasicMaterial({
-          map: textures[0],
-          toneMapped: false,
-        })
-        : new THREE.MeshBasicMaterial({ color: "#00ff41" }),
-    [textures]
-  );
+      return new THREE.MeshBasicMaterial({
+        map: tex,
+        toneMapped: false,
+      });
+    }
+
+    // Fallback green glow if no videos are configured
+    return new THREE.MeshBasicMaterial({ color: "#00ff41" });
+  }, [videoPaths]);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -521,50 +528,83 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
       onPointerOut={() => { onHover(false); document.body.style.cursor = "auto"; }}
     >
       <group ref={innerRef}>
-        {/* Outer frame */}
-        <mesh castShadow receiveShadow position={[0, 0, -0.12]}>
-          <boxGeometry args={[2.2, 4.8, 0.20]} />
-          <primitive object={frameMat} attach="material" />
-        </mesh>
+        {/*
+          We construct the door from the floor up.
+          The group sits at world Y = 1.6, so the floor is at local Y = -1.6.
+        */}
+        {(() => {
+          const doorHeight = 3.8;
+          const doorWidth = 1.9;
+          const floorY = -1.6;
+          
+          // Outer frame (Architrave)
+          const frameThick = 0.22;
+          const frameDepth = 0.24;
+          const frameH = doorHeight + frameThick;
 
-        {/* Door pane */}
-        <mesh castShadow receiveShadow position={[0, 0, 0]}>
-          <boxGeometry args={[1.9, 4.7, 0.08]} />
-          <primitive object={paneMat} attach="material" />
-        </mesh>
+          // Door leaf
+          const leafDepth = 0.12;
+          const leafCenterY = floorY + doorHeight / 2;
 
-        {/* Top trim strip */}
-        <mesh position={[0, 1.98, 0.05]}>
-          <boxGeometry args={[1.94, 0.05, 0.06]} />
-          <primitive object={trimMat} attach="material" />
-        </mesh>
-        {/* Bottom trim */}
-        <mesh position={[0, -1.98, 0.05]}>
-          <boxGeometry args={[1.94, 0.05, 0.06]} />
-          <primitive object={trimMat} attach="material" />
-        </mesh>
-        {/* Left trim */}
-        <mesh position={[-0.97, 0, 0.05]}>
-          <boxGeometry args={[0.05, 4.0, 0.06]} />
-          <primitive object={trimMat} attach="material" />
-        </mesh>
-        {/* Right trim */}
-        <mesh position={[0.97, 0, 0.05]}>
-          <boxGeometry args={[0.05, 4.0, 0.06]} />
-          <primitive object={trimMat} attach="material" />
-        </mesh>
+          // Doorknob (scaled up for the 3.8m tall door, standard is ~0.9m on a 2.1m door, so ~1.65m here)
+          const knobY = floorY + 1.65;
+          // Knob X position (close to right edge)
+          const knobX = doorWidth / 2 - 0.2;
 
-        {/* Doorknob */}
-        <mesh castShadow position={[0.75, 0, 0.1]}>
-          <sphereGeometry args={[0.09, 32, 32]} />
-          <meshStandardMaterial color="#aaaaaa" metalness={0.95} roughness={0.05} />
-        </mesh>
+          return (
+            <>
+              {/* Outer frame - Left */}
+              <mesh castShadow receiveShadow position={[-(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
+                <boxGeometry args={[frameThick, frameH, frameDepth]} />
+                <primitive object={frameMat} attach="material" />
+              </mesh>
+              {/* Outer frame - Right */}
+              <mesh castShadow receiveShadow position={[(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
+                <boxGeometry args={[frameThick, frameH, frameDepth]} />
+                <primitive object={frameMat} attach="material" />
+              </mesh>
+              {/* Outer frame - Top lintel (slightly wider/deeper for a crown effect) */}
+              <mesh castShadow receiveShadow position={[0, floorY + doorHeight + frameThick / 2, -0.09]}>
+                <boxGeometry args={[doorWidth + frameThick * 2 + 0.1, frameThick, frameDepth + 0.04]} />
+                <primitive object={frameMat} attach="material" />
+              </mesh>
 
-        {/* Knob backplate */}
-        <mesh position={[0.75, 0, 0.06]}>
-          <cylinderGeometry args={[0.12, 0.12, 0.02, 32]} />
-          <meshStandardMaterial color="#999999" metalness={0.8} roughness={0.1} />
-        </mesh>
+              {/* Main Door Solid Base (Flat, bland slab door) */}
+              <mesh castShadow receiveShadow position={[0, leafCenterY, 0]}>
+                <boxGeometry args={[doorWidth, doorHeight, leafDepth]} />
+                <primitive object={paneMat} attach="material" />
+              </mesh>
+
+              {/* High-Fidelity Doorknob Assembly */}
+              <group position={[knobX, knobY, leafDepth / 2 + 0.01]}>
+                {/* Backplate */}
+                <mesh castShadow receiveShadow position={[0, 0, 0]}>
+                  <boxGeometry args={[0.09, 0.38, 0.02]} />
+                  <meshStandardMaterial color="#888888" metalness={0.7} roughness={0.3} />
+                </mesh>
+                {/* Knob Stem */}
+                <mesh castShadow position={[0, 0.06, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.018, 0.018, 0.06, 16]} />
+                  <meshStandardMaterial color="#aaaaaa" metalness={0.8} roughness={0.2} />
+                </mesh>
+                {/* Actual Knob (Sphere) */}
+                <mesh castShadow position={[0, 0.06, 0.07]}>
+                  <sphereGeometry args={[0.045, 32, 32]} />
+                  <meshStandardMaterial color="#eeeeee" metalness={1.0} roughness={0.1} />
+                </mesh>
+                {/* Keyhole cutout */}
+                <mesh position={[0, -0.1, 0.011]}>
+                  <circleGeometry args={[0.012, 16]} />
+                  <meshBasicMaterial color="#000000" />
+                </mesh>
+                <mesh position={[0, -0.12, 0.011]}>
+                  <planeGeometry args={[0.018, 0.035]} />
+                  <meshBasicMaterial color="#000000" />
+                </mesh>
+              </group>
+            </>
+          );
+        })()}
       </group>
     </group>
   );
@@ -672,6 +712,7 @@ interface SceneProps {
   doorHovered: boolean;
   onDoorHover: (h: boolean) => void;
   onDoorClick: () => void;
+  videoPaths: string[];
 }
 
 function Scene({
@@ -683,6 +724,7 @@ function Scene({
   doorHovered,
   onDoorHover,
   onDoorClick,
+  videoPaths,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -695,9 +737,13 @@ function Scene({
     }
   }, [cameraTarget]);
 
-  // Point camera forward into the scene on first load
+  // Point camera forward into the scene on first load or back navigation
   useEffect(() => {
+    const homePos = ARCHITECT_CONFIG.cameraHome;
     const homeLookAt = ARCHITECT_CONFIG.cameraLookAtHome;
+    
+    // Explicitly reset position in case the browser cached the modified camera state
+    camera.position.copy(homePos);
     camera.lookAt(homeLookAt);
     if (orbitRef.current) {
       orbitRef.current.target.copy(homeLookAt);
@@ -714,7 +760,6 @@ function Scene({
         orbitRef={orbitRef}
         onArrived={onCameraArrived}
       />
-      <BakeShadows />
 
       {/* Lighting */}
       <ambientLight intensity={0.6} />
@@ -742,17 +787,17 @@ function Scene({
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[100, 100]} />
         <MeshReflectorMaterial
-          blur={[400, 100]}
+          blur={[750, 750]}
           resolution={1024}
-          mixBlur={1}
-          mixStrength={90}
-          roughness={0.08}
+          mixBlur={2}
+          mixStrength={60}
+          roughness={0.6}
           depthScale={1.2}
-          minDepthThreshold={0.4}
-          maxDepthThreshold={1.4}
-          color="#ffffff"
-          metalness={0.12}
-          mirror={1}
+          minDepthThreshold={0.8}
+          maxDepthThreshold={3.5}
+          color="#eeeeee83"
+          metalness={0.1}
+          mirror={0.65}
         />
       </mesh>
 
@@ -761,7 +806,7 @@ function Scene({
 
       {/* Monitor wall */}
       <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
-      <GreenScreens positions={positions} />
+      <GreenScreens positions={positions} videoPaths={videoPaths} />
       <ScreenBezels positions={positions} />
 
       {/* Door */}
@@ -769,61 +814,7 @@ function Scene({
 
       {/* ── Neo (Standing, left side) ────────────────────────────── */}
       <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
-        {/* Head */}
-        <mesh position={[0, 1.72, 0]} castShadow>
-          <sphereGeometry args={[0.14, 12, 8]} />
-          <meshStandardMaterial color="#d4a574" roughness={0.8} />
-        </mesh>
-        {/* Hair */}
-        <mesh position={[0, 1.82, -0.02]} castShadow>
-          <sphereGeometry args={[0.15, 8, 6]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.95} />
-        </mesh>
-        {/* Sunglasses band */}
-        <mesh position={[0, 1.73, 0.12]}>
-          <boxGeometry args={[0.22, 0.04, 0.04]} />
-          <meshStandardMaterial color="#111" metalness={0.9} roughness={0.1} />
-        </mesh>
-        {/* Neck */}
-        <mesh position={[0, 1.56, 0]} castShadow>
-          <cylinderGeometry args={[0.06, 0.07, 0.12, 8]} />
-          <meshStandardMaterial color="#d4a574" roughness={0.8} />
-        </mesh>
-        {/* Torso (black coat) */}
-        <mesh position={[0, 1.25, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.55, 0.24]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
-        </mesh>
-        {/* Coat lower (long trench) */}
-        <mesh position={[0, 0.75, 0]} castShadow>
-          <boxGeometry args={[0.44, 0.5, 0.26]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
-        </mesh>
-        {/* Coat tail (goes past knees) */}
-        <mesh position={[0, 0.35, -0.04]} castShadow>
-          <boxGeometry args={[0.40, 0.35, 0.18]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
-        </mesh>
-        {/* Left arm */}
-        <mesh position={[-0.28, 1.18, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.55, 0.14]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
-        </mesh>
-        {/* Right arm */}
-        <mesh position={[0.28, 1.18, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.55, 0.14]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.85} />
-        </mesh>
-        {/* Left leg */}
-        <mesh position={[-0.1, 0.38, 0]} castShadow>
-          <boxGeometry args={[0.16, 0.76, 0.18]} />
-          <meshStandardMaterial color="#111111" roughness={0.9} />
-        </mesh>
-        {/* Right leg */}
-        <mesh position={[0.1, 0.38, 0]} castShadow>
-          <boxGeometry args={[0.16, 0.76, 0.18]} />
-          <meshStandardMaterial color="#111111" roughness={0.9} />
-        </mesh>
+        <NeoModel scale={0.15} position={[0, 0, 0]} />
       </group>
 
       {/* ── The Architect (Seated, right side) ────────────────────── */}
@@ -1052,6 +1043,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           doorHovered={doorHovered}
           onDoorHover={setDoorHovered}
           onDoorClick={handleDoorClick}
+          videoPaths={videoPaths}
         />
       </Canvas>
 
@@ -1059,6 +1051,32 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       {videoVisible && activeScreen && (
         <VideoOverlay src={activeScreen.videoSrc} onClose={handleCloseVideo} />
       )}
+
+      {/* Cinematic Black Bars (Letterbox) */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "12vh",
+          background: "black",
+          zIndex: 40, // Below the VideoOverlay which has zIndex: 50
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "12vh",
+          background: "black",
+          zIndex: 40,
+          pointerEvents: "none",
+        }}
+      />
 
       {/* Hint label */}
       {!activeScreen && (
@@ -1074,6 +1092,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
             letterSpacing: "0.12em",
             pointerEvents: "none",
             userSelect: "none",
+            zIndex: 45, // Above the black bars
           }}
         >
           DRAG TO LOOK · CLICK A SCREEN · CLICK THE DOOR
