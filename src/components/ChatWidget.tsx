@@ -34,7 +34,7 @@ export default function ChatWidget() {
       const data = await res.json();
       const content = data?.content ?? "(No response)";
       setMessages((m) => [...m, { role: "assistant", content }]);
-    } catch (e) {
+    } catch {
       setMessages((m) => [
         ...m,
         {

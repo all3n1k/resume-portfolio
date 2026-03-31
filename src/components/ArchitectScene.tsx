@@ -4,7 +4,6 @@ import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
-  BakeShadows,
   OrbitControls,
 } from "@react-three/drei";
 import * as THREE from "three";
@@ -42,7 +41,6 @@ interface ArchitectSceneProps {
 const RADIUS = 14;
 const ITEMS_PER_ROW = 75;
 const ROWS = 18;
-const MONITOR_HEIGHT = 0.95;
 const COUNT_LIMIT = 1200;
 // Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
 // so they all appear the same physical size regardless of latitude
@@ -115,7 +113,7 @@ function buildPositions(): MonitorPosition[] {
   return pos;
 }
 
-// ─── Utility: build a canvas texture for a given agent type ──────────────────
+// ─── Utility: build a canvas texture for a given agent type (commented out)
 
 function buildScreenTexture(agentIndex: number): THREE.CanvasTexture {
   const w = 256, h = 180;
@@ -504,18 +502,6 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
         metalness: 0.2,
         emissive: "#ffffff",
         emissiveIntensity: hovered ? 0.06 : 0.01,
-      }),
-    [hovered]
-  );
-
-  const trimMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: "#cccccc",
-        roughness: 0.3,
-        metalness: 0.6,
-        emissive: "#aaaaaa",
-        emissiveIntensity: hovered ? 0.3 : 0.05,
       }),
     [hovered]
   );

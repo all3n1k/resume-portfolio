@@ -5,8 +5,8 @@ import { SkeletonUtils } from 'three-stdlib'
 
 const texRoot = '/neo/';
 
-export function Model(props: any) {
-  const group = React.useRef<any>(null)
+export function Model(props: React.ComponentProps<'group'>) {
+  const group = React.useRef<THREE.Group>(null)
 
   const fbx = useFBX('/neo/Neo.fbx')
   const idleAnim = useFBX('/neo/Breathing Idle.fbx')
@@ -45,13 +45,14 @@ export function Model(props: any) {
 
   useEffect(() => {
     // Apply textures and fix backface culling
-    clone.traverse((child: any) => {
-      if (child.isMesh) {
-        const tex = textures[child.name as keyof typeof textures];
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        const tex = textures[mesh.name as keyof typeof textures];
         if (tex) {
           tex.colorSpace = THREE.SRGBColorSpace;
 
-          child.material = new THREE.MeshStandardMaterial({
+          mesh.material = new THREE.MeshStandardMaterial({
             map: tex,
             side: THREE.DoubleSide,
             roughness: 0.8,
