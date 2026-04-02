@@ -44,41 +44,43 @@ const achievements = [
 
 export default function Home() {
   return (
-    <EasterEggManager>
+    <>
       <CustomCursor enabled={true} color="#00ff41" glowIntensity={0.8} />
-      <MatrixCanvas opacity={0.08} density={0.03} speed={40} />
+      <MatrixCanvas opacity={0.08} density={0.03} speed={40} mouseTrail={true} />
       
       <LandingDoorSequence>
-        <main className="relative z-10 min-h-screen">
-          <HeroSection
-            name="ALLEN"
-            tagline="Building the future, one commit at a time"
-          />
-          
-          <ModernAchievements items={achievements} />
-          
-          <ModernContact />
-          
-          <footer className="relative z-10 py-12 border-t border-white/10">
-            <div className="max-w-6xl mx-auto px-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="text-white/40 text-sm font-mono">
-                  <span className="text-green-400">$</span> echo $SIGATURE
-                </div>
-                <div className="text-white/30 text-sm">
-                  &copy; {new Date().getFullYear()} Allen. All systems operational.
-                </div>
-                <div className="flex items-center gap-2 text-white/30 text-xs font-mono">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  v2.0.0
+        <EasterEggManager>
+          <main className="relative z-10 min-h-screen">
+            <HeroSection
+              name="ALLEN"
+              tagline="Building the future, one commit at a time"
+            />
+            
+            <ModernAchievements items={achievements} />
+            
+            <ModernContact />
+            
+            <footer className="relative z-10 py-12 border-t border-white/10">
+              <div className="max-w-6xl mx-auto px-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="text-white/40 text-sm font-mono">
+                    <span className="text-green-400">$</span> echo $SIGATURE
+                  </div>
+                  <div className="text-white/30 text-sm">
+                    &copy; {new Date().getFullYear()} Allen. All systems operational.
+                  </div>
+                  <div className="flex items-center gap-2 text-white/30 text-xs font-mono">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    v2.0.0
+                  </div>
                 </div>
               </div>
-            </div>
-          </footer>
-        </main>
+            </footer>
+          </main>
 
-        <ChatWidget />
+          <ChatWidget />
+        </EasterEggManager>
       </LandingDoorSequence>
-    </EasterEggManager>
+    </>
   );
 }

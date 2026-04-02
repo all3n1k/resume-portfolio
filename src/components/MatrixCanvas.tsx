@@ -4,21 +4,32 @@ import { useEffect, useRef, useCallback } from "react";
 
 const CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]=/";
 
+interface TrailPoint {
+  x: number;
+  y: number;
+  opacity: number;
+  age: number;
+}
+
 interface MatrixCanvasProps {
   opacity?: number;
   speed?: number;
   density?: number;
+  mouseTrail?: boolean;
 }
 
 export default function MatrixCanvas({ 
   opacity = 0.15, 
   speed = 35,
-  density = 0.02 
+  density = 0.02,
+  mouseTrail = true 
 }: MatrixCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dropsRef = useRef<number[]>([]);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
+  const mouseTrailRef = useRef<TrailPoint[]>([]);
+  const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
 
   const draw = useCallback((timestamp: number) => {
     const canvas = canvasRef.current;
@@ -66,8 +77,37 @@ export default function MatrixCanvas({
       dropsRef.current[i]++;
     });
 
+    // Draw mouse trail
+    if (mouseTrail && mouseTrailRef.current.length > 0) {
+      mouseTrailRef.current.forEach((point, idx) => {
+        const trailOpacity = point.opacity * 0.6;
+        const brightness = point.opacity;
+        
+        // Bright head of trail
+        ctx.fillStyle = `rgba(255, 255, 255, ${trailOpacity * brightness})`;
+        ctx.font = `bold ${FONT_SIZE + 2}px monospace`;
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], point.x, point.y);
+        
+        // Green body
+        ctx.fillStyle = `rgba(0, 255, 65, ${trailOpacity * 0.8})`;
+        ctx.font = `bold ${FONT_SIZE}px monospace`;
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], point.x - 2, point.y - FONT_SIZE);
+        
+        // Dim tail
+        ctx.fillStyle = `rgba(0, 204, 51, ${trailOpacity * 0.5})`;
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], point.x + 2, point.y - FONT_SIZE * 2);
+        
+        // Update point
+        point.age++;
+        point.opacity = Math.max(0, point.opacity - 0.015);
+      });
+      
+      // Remove dead points
+      mouseTrailRef.current = mouseTrailRef.current.filter(p => p.opacity > 0);
+    }
+
     rafRef.current = requestAnimationFrame(draw);
-  }, [density, speed]);
+  }, [density, speed, mouseTrail]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,15 +121,42 @@ export default function MatrixCanvas({
       dropsRef.current = Array.from({ length: cols }, () => Math.random() * -50);
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!mouseTrail) return;
+      
+      const current = { x: e.clientX, y: e.clientY };
+      
+      if (lastMouseRef.current) {
+        const dx = current.x - lastMouseRef.current.x;
+        const dy = current.y - lastMouseRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const numPoints = Math.min(Math.floor(distance / 8), 20);
+        
+        for (let i = 1; i <= numPoints; i++) {
+          const t = i / (numPoints + 1);
+          mouseTrailRef.current.push({
+            x: lastMouseRef.current.x + dx * t,
+            y: lastMouseRef.current.y + dy * t,
+            opacity: 1,
+            age: 0,
+          });
+        }
+      }
+      
+      lastMouseRef.current = current;
+    };
+
     resize();
     window.addEventListener("resize", resize);
+    window.addEventListener("mousemove", handleMouseMove);
     rafRef.current = requestAnimationFrame(draw);
 
     return () => {
       window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [draw]);
+  }, [draw, mouseTrail]);
 
   return (
     <canvas
