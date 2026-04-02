@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Particle {
@@ -36,7 +36,7 @@ function randomFrom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export default function CodeExplosion({ trigger, onComplete }: { trigger?: { x: number; y: number } | null; onComplete?: () => void }) {
+export default function CodeExplosion({ trigger }: { trigger?: { x: number; y: number } | null }) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const idRef = useRef(0);
   const frameRef = useRef<number>(0);
@@ -103,9 +103,11 @@ export default function CodeExplosion({ trigger, onComplete }: { trigger?: { x: 
     frameRef.current = requestAnimationFrame(animate);
   }, []);
 
-  if (trigger) {
-    createExplosion(trigger.x, trigger.y);
-  }
+  useEffect(() => {
+    if (trigger) {
+      createExplosion(trigger.x, trigger.y);
+    }
+  }, [trigger, createExplosion]);
 
   return (
     <AnimatePresence>
@@ -149,8 +151,8 @@ export function useCodeExplosion() {
   }, []);
 
   const ExplosionComponent = useCallback(
-    ({ onComplete }: { onComplete?: () => void }) => (
-      <CodeExplosion key={key} trigger={trigger} onComplete={onComplete} />
+    () => (
+      <CodeExplosion key={key} trigger={trigger} />
     ),
     [key, trigger]
   );

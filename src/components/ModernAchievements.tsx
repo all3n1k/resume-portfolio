@@ -147,16 +147,11 @@ export default function ModernAchievements({ items }: { items: Array<{ id: strin
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-white/30">
-                        {isHovered ? "Hover detected" : "Waiting for input..."}
-                      </div>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: isHovered ? "100%" : "0%" }}
-                        className="h-0.5 bg-gradient-to-r from-green-500 to-cyan-500"
-                      />
-                    </div>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: isHovered ? "100%" : "0%" }}
+                      className="h-0.5 bg-gradient-to-r from-green-500 to-cyan-500"
+                    />
                   </div>
                 </div>
               </motion.div>

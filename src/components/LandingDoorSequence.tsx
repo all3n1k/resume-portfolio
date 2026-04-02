@@ -26,6 +26,11 @@ function MatrixRain({ onMidpoint, onComplete }: MatrixRainProps) {
   const [opacity, setOpacity] = useState(0);
   const midpointFired = useRef(false);
   const completeFired = useRef(false);
+  // Reset refs when component mounts (for re-uses like back button)
+  useEffect(() => {
+    midpointFired.current = false;
+    completeFired.current = false;
+  }, []);
 
   // Opacity animation: fade in → hold → fade out
   useEffect(() => {
