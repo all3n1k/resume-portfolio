@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useCodeExplosion } from "./CodeExplosion";
 
 const KONAMI_CODE = [
   "ArrowUp", "ArrowUp",
@@ -14,11 +13,11 @@ const KONAMI_CODE = [
 export default function EasterEggManager({ children }: { children: React.ReactNode }) {
   const [konamiActive, setKonamiActive] = useState(false);
   const [tripleClickHint, setTripleClickHint] = useState(false);
+  const [clickFlash, setClickFlash] = useState(false);
   const clickCountRef = useRef(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const inputRef = useRef<string[]>([]);
-  const { explode, ExplosionComponent } = useCodeExplosion();
 
   const resetKonami = useCallback(() => {
     inputRef.current = [];
@@ -43,21 +42,31 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
       }
     };
 
+    const handleKeyUp = () => {
+      if (konamiActive) {
+        setKonamiActive(false);
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [resetKonami]);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [resetKonami, konamiActive]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       
-      // Don't trigger on elements inside achievements (they handle their own interactions)
       if (target.closest("[data-secret]")) {
         return;
       }
       
       if (target.tagName === "BUTTON" || target.closest("button")) {
-        explode(e);
+        setClickFlash(true);
+        setTimeout(() => setClickFlash(false), 100);
       }
     };
 
@@ -85,13 +94,17 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
       document.removeEventListener("dblclick", handleTripleClick);
       if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
     };
-  }, [explode]);
+  }, []);
 
   return (
     <>
       {children}
       
-      <ExplosionComponent />
+      {clickFlash && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-[99] bg-green-500/5 animate-pulse"
+        />
+      )}
       
       {konamiActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 animate-pulse">
