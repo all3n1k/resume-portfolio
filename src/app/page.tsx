@@ -5,7 +5,7 @@ import { SkillsSection } from "./portfolio/components/skills-section";
 import { ProjectsSection } from "./portfolio/components/projects-section";
 import { ContactSection } from "./portfolio/components/contact-section";
 import MatrixCanvas from "@/components/MatrixCanvas";
-import CustomCursor from "@/components/CustomCursor";
+
 import EasterEggManager from "@/components/EasterEggManager";
 import HeroSection from "@/components/HeroSection";
 import ModernAchievements from "@/components/ModernAchievements";
@@ -45,7 +45,6 @@ const achievements = [
 export default function Home() {
   return (
     <>
-      <CustomCursor enabled={true} color="#00ff41" glowIntensity={0.8} />
       <MatrixCanvas opacity={0.08} density={0.03} speed={40} mouseTrail={true} />
       
       <LandingDoorSequence>
