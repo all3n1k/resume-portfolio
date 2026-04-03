@@ -13,7 +13,6 @@ const KONAMI_CODE = [
 export default function EasterEggManager({ children }: { children: React.ReactNode }) {
   const [konamiActive, setKonamiActive] = useState(false);
   const [tripleClickHint, setTripleClickHint] = useState(false);
-  const [clickFlash, setClickFlash] = useState(false);
   const clickCountRef = useRef(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -57,19 +56,6 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
   }, [resetKonami, konamiActive]);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      
-      if (target.closest("[data-secret]")) {
-        return;
-      }
-      
-      if (target.tagName === "BUTTON" || target.closest("button")) {
-        setClickFlash(true);
-        setTimeout(() => setClickFlash(false), 100);
-      }
-    };
-
     const handleTripleClick = () => {
       clickCountRef.current++;
       
@@ -86,11 +72,9 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
       }, 500);
     };
 
-    window.addEventListener("click", handleClick);
     document.addEventListener("dblclick", handleTripleClick);
 
     return () => {
-      window.removeEventListener("click", handleClick);
       document.removeEventListener("dblclick", handleTripleClick);
       if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
     };
@@ -99,13 +83,7 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
   return (
     <>
       {children}
-      
-      {clickFlash && (
-        <div 
-          className="fixed inset-0 pointer-events-none z-[99] bg-green-500/5 animate-pulse"
-        />
-      )}
-      
+
       {konamiActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 animate-pulse">
           <div className="text-center">

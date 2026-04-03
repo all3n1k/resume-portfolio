@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ArchitectScene from "./ArchitectScene";
+import MatrixCanvas from "./MatrixCanvas";
 
 interface LandingDoorSequenceProps {
   children: React.ReactNode;
@@ -36,9 +37,9 @@ function MatrixRain({ onMidpoint, onComplete }: MatrixRainProps) {
   useEffect(() => {
     let frame: number;
     const start = performance.now();
-    const FADE_IN = 700;
-    const HOLD = 1200;
-    const FADE_OUT = 900;
+    const FADE_IN = 400;
+    const HOLD = 600;
+    const FADE_OUT = 500;
     const TOTAL = FADE_IN + HOLD + FADE_OUT;
 
     const tick = (now: number) => {
@@ -175,6 +176,7 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
 
       {entered ? (
         <div className="relative">
+          <MatrixCanvas opacity={0.08} density={0.03} speed={40} mouseTrail={true} />
           <button
             onClick={handleBack}
             style={{

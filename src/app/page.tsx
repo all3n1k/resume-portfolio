@@ -1,14 +1,9 @@
 import ChatWidget from "@/components/ChatWidget";
 import LandingDoorSequence from "@/components/LandingDoorSequence";
-import { AboutSection } from "./portfolio/components/about-section";
-import { SkillsSection } from "./portfolio/components/skills-section";
-import { ProjectsSection } from "./portfolio/components/projects-section";
-import { ContactSection } from "./portfolio/components/contact-section";
-import MatrixCanvas from "@/components/MatrixCanvas";
-
 import EasterEggManager from "@/components/EasterEggManager";
 import HeroSection from "@/components/HeroSection";
 import ModernAchievements from "@/components/ModernAchievements";
+import TechStack from "@/components/TechStack";
 import ModernContact from "@/components/ModernContact";
 
 const achievements = [
@@ -17,59 +12,59 @@ const achievements = [
     year: "2024",
     title: "Cybersecurity & Pen-Testing",
     description:
-      "Conducted internal penetration testing with full kill-chain execution (enumeration, lateral traversal, privilege escalation). Managed incident response, server infra, and device provisioning.",
+      "Technical Support Specialist at a cybersecurity firm. Authorized for internal pen-testing with full kill-chain execution — enumeration, lateral traversal, privilege escalation — delivering post-exploitation reports to reliability engineering. Managed incident response, container rollback automation, CVE tracking, and contributed to an internal Go-based workforce management system. Tools: Metasploit, Burp Suite, Ghidra.",
   },
   {
     id: "a2",
     year: "2023",
     title: "Co-Founded Jewelry Tech Platform",
     description:
-      "Architected a scalable full-stack ecosystem: a React app with generative AI for designs, a graph-based planning board, multi-stage tracking (Apple-inspired), and webhook/RTMP integrations.",
+      "Sole technology architect for a jewelry manufacturing company. Built the entire stack over ~1 year: a React app with early diffusion-model AI for design concepts, an Obsidian-inspired graph planning board, Apple-style multi-stage order tracking with photo updates, webhook/RTMP/SMS integrations, and fiber-networked workstations. Reduced headcount by automating design-to-delivery coordination. Later transitioned to CDN architecture targeting the NY tri-state market.",
   },
   {
     id: "a3",
     year: "2022",
     title: "Web Security Research",
     description:
-      "Led a team simulating credential stuffing and auditing auth systems. Developed custom OpenBullet forks with extensive browser emulation, built botnet request infra, and reverse-engineered apps with Frida.",
+      "Organized and led a team conducting anti-bot evasion, credential stuffing simulation, and auth auditing across e-commerce and fast food platforms. Built custom OpenBullet forks with extended browser emulation and UA spoofing, JS fingerprint evasion, and botnet request infra. Used Frida on Android/iOS to hook auth flows. Designed a proprietary time-based encryption method tied to atomic clock-synchronized UA generation.",
   },
   {
     id: "a4",
-    year: "2014-",
+    year: "2014–",
     title: "Hardware Modding & Software Fundamentals",
     description:
-      "Started by modding PS3/Xbox hardware. Transitioned into software cracking, modding reverse-engineering using Cheat Engine, shaping the foundation of my engineering intuition.",
+      "Began by disassembling and modding PS3 and original Xbox consoles — cooling systems, casings, hardware internals. Built and upgraded PCs (i7-4790K + GTX 760 Ti → AMD workstation + GTX 980). Transitioned into game modding with Cheat Engine and custom menus, then into software cracking, reverse engineering, Unreal Engine game dev, and server hosting.",
   },
 ];
 
 export default function Home() {
   return (
     <>
-      <MatrixCanvas opacity={0.08} density={0.03} speed={40} mouseTrail={true} />
-      
       <LandingDoorSequence>
         <EasterEggManager>
           <main className="relative z-10 min-h-screen">
             <HeroSection
               name="ALLEN"
-              tagline="Building the future, one commit at a time"
+              tagline="Security researcher and full-stack engineer — building systems that scale and breaking the ones that don't."
             />
-            
+
             <ModernAchievements items={achievements} />
-            
+
+            <TechStack />
+
             <ModernContact />
-            
-            <footer className="relative z-10 py-12 border-t border-white/10">
+
+            <footer className="relative z-10 py-10 border-t border-white/[0.04]">
               <div className="max-w-6xl mx-auto px-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="text-white/40 text-sm font-mono">
-                    <span className="text-green-400">$</span> echo $SIGATURE
+                  <div className="text-white/20 text-xs font-mono">
+                    <span className="text-green-500/50">$</span> echo &quot;built with next.js + three.js&quot;
                   </div>
-                  <div className="text-white/30 text-sm">
+                  <div className="text-white/15 text-xs">
                     &copy; {new Date().getFullYear()} Allen. All systems operational.
                   </div>
-                  <div className="flex items-center gap-2 text-white/30 text-xs font-mono">
-                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <div className="flex items-center gap-2 text-white/15 text-xs font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
                     v2.0.0
                   </div>
                 </div>

@@ -1,81 +1,111 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Send, MapPin } from "lucide-react";
+import { Github, Linkedin, Mail, Send, ArrowUpRight } from "lucide-react";
 
 const SOCIAL_LINKS = [
-  { icon: Github, href: "#", label: "GitHub", color: "hover:text-white" },
-  { icon: Linkedin, href: "#", label: "LinkedIn", color: "hover:text-blue-400" },
-  { icon: Mail, href: "mailto:hello@example.com", label: "Email", color: "hover:text-red-400" },
+  { icon: Github, href: "#", label: "GitHub", handle: "@allen" },
+  { icon: Linkedin, href: "#", label: "LinkedIn", handle: "in/allen" },
+  { icon: Mail, href: "mailto:hello@example.com", label: "Email", handle: "hello@example.com" },
 ];
+
+function LiveClock() {
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+          timeZone: "America/Los_Angeles",
+        })
+      );
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="tabular-nums">{time || "--:--:--"}</span>
+  );
+}
 
 export default function ModernContact() {
   return (
-    <section id="contact" className="relative py-24 md:py-32">
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-      
-      <div className="relative max-w-4xl mx-auto px-6">
+    <section id="contact" className="relative py-28 md:py-36">
+      <div className="max-w-6xl mx-auto px-6">
+        {/* Section header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16"
         >
-          <div className="inline-block mb-6 px-4 py-1.5 rounded-full border border-pink-500/30 bg-pink-500/5">
-            <span className="text-pink-400 text-sm font-mono tracking-wider">
-              $ ./contact.sh --init
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 max-w-[60px] bg-gradient-to-r from-green-500 to-transparent" />
+            <span className="text-green-400 text-xs font-mono tracking-[0.2em] uppercase">
+              contact
             </span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              Let&apos;s Connect
-            </span>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tight">
+            <span className="text-white">Let&apos;s </span>
+            <span className="gradient-text">Connect</span>
           </h2>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">
-            Ready to build something extraordinary? I&apos;m always open to discussing new projects and opportunities.
+          <p className="mt-4 text-white/40 text-lg max-w-xl">
+            Open to new opportunities, collaborations, and interesting conversations.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        {/* Bento grid */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Contact form — spans 2 cols */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative group"
+            className="md:col-span-2 relative group"
           >
-            <div className="absolute -inset-px bg-gradient-to-r from-pink-500/50 to-purple-500/50 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="relative p-8 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
-              <h3 className="text-xl font-bold text-white mb-6">Send a Message</h3>
-              
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm text-white/40 mb-2">Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-green-500/50 transition-colors"
-                  />
+            <div className="relative p-8 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+              <div className="flex items-center gap-2 mb-8">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Send a message</span>
+              </div>
+
+              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Name</label>
+                    <input
+                      type="text"
+                      placeholder="Your name"
+                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Email</label>
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all text-sm"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-white/40 mb-2">Email</label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-green-500/50 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-white/40 mb-2">Message</label>
+                  <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Message</label>
                   <textarea
                     rows={4}
-                    placeholder="What&apos;s on your mind?"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-green-500/50 transition-colors resize-none"
+                    placeholder="What's on your mind?"
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all resize-none text-sm"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-green-400 to-emerald-400 hover:brightness-110 transition-all shadow-lg shadow-green-500/10 text-sm"
                 >
                   Send Message
                   <Send className="w-4 h-4" />
@@ -84,68 +114,75 @@ export default function ModernContact() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="space-y-6"
-          >
-            <div className="relative group">
-              <div className="absolute -inset-px bg-gradient-to-r from-purple-500/50 to-cyan-500/50 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative p-8 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
-                <h3 className="text-xl font-bold text-white mb-6">Quick Links</h3>
-                
-                <div className="space-y-4">
-                  {SOCIAL_LINKS.map((link) => (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      className={`flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-green-500/50 hover:bg-green-500/5 transition-all ${link.color}`}
-                    >
-                      <link.icon className="w-5 h-5 text-white/60" />
-                      <span className="text-white">{link.label}</span>
-                      <span className="ml-auto text-white/30">→</span>
-                    </a>
-                  ))}
+          {/* Right column stack */}
+          <div className="space-y-4">
+            {/* Social links */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="p-6 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+            >
+              <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Links</span>
+              <div className="mt-4 space-y-2">
+                {SOCIAL_LINKS.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className="group/link flex items-center gap-3 p-3 -mx-3 rounded-xl hover:bg-white/[0.04] transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                      <link.icon className="w-4 h-4 text-white/50 group-hover/link:text-green-400 transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-white/80 font-medium">{link.label}</div>
+                      <div className="text-xs text-white/30 font-mono truncate">{link.handle}</div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-white/10 group-hover/link:text-green-400/50 transition-colors" />
+                  </a>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Location + time */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="p-6 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+            >
+              <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Location</span>
+              <div className="mt-4 space-y-3">
+                <div className="text-white/70 text-sm">San Francisco, CA</div>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-2xl font-mono text-green-400 font-bold">
+                    <LiveClock />
+                  </span>
+                  <span className="text-xs text-white/20 font-mono">PST</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative group">
-              <div className="absolute -inset-px bg-gradient-to-r from-cyan-500/50 to-green-500/50 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative p-8 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
-                <h3 className="text-xl font-bold text-white mb-4">Location</h3>
-                <div className="flex items-center gap-3 text-white/60">
-                  <MapPin className="w-5 h-5 text-green-400" />
-                  <span>San Francisco, CA</span>
-                </div>
-                <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs text-white/30 mb-1">Local Time</div>
-                  <div className="text-lg text-green-400 font-mono">
-                    --:-- PST
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="mt-16 text-center"
-        >
-          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-full border border-white/10 bg-white/5">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-            <span className="text-white/60 text-sm font-mono">Available for opportunities</span>
+            {/* Status */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="p-4 rounded-2xl border border-green-500/10 bg-green-500/[0.03] flex items-center gap-3"
+            >
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+              </span>
+              <span className="text-green-400/80 text-sm font-mono">
+                Open to opportunities
+              </span>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
