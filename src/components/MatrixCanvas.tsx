@@ -84,9 +84,13 @@ export default function MatrixCanvas({
     if (mouseTrail && trailCanvas) {
       const trailCtx = trailCanvas.getContext("2d");
       if (trailCtx) {
-        // Clear trail canvas each frame with fast fade
-        trailCtx.fillStyle = "rgba(0, 0, 0, 0.15)";
-        trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+        // Clear fully each frame — trail persistence comes from point lifespan only
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+
+        // Cap max trail points to keep it short
+        if (mouseTrailRef.current.length > 12) {
+          mouseTrailRef.current = mouseTrailRef.current.slice(-12);
+        }
 
         mouseTrailRef.current.forEach((point) => {
           const a = point.opacity;
@@ -96,7 +100,7 @@ export default function MatrixCanvas({
           trailCtx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], point.x, point.y);
 
           point.age++;
-          point.opacity = Math.max(0, point.opacity - 0.03);
+          point.opacity = Math.max(0, point.opacity - 0.06);
         });
 
         mouseTrailRef.current = mouseTrailRef.current.filter(p => p.opacity > 0);
@@ -132,7 +136,7 @@ export default function MatrixCanvas({
         const dx = current.x - lastMouseRef.current.x;
         const dy = current.y - lastMouseRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const numPoints = Math.min(Math.floor(distance / 6), 25);
+        const numPoints = Math.min(Math.floor(distance / 14), 8);
 
         for (let i = 1; i <= numPoints; i++) {
           const t = i / (numPoints + 1);
@@ -180,8 +184,8 @@ export default function MatrixCanvas({
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1,
-            opacity: 0.5,
+            zIndex: 0,
+            opacity: 0.45,
             pointerEvents: "none",
           }}
         />
