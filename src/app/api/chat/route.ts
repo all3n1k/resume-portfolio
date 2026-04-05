@@ -63,9 +63,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY || "lm-studio"; // LM Studio can accept any key
-    const baseUrl = process.env.OPENAI_API_BASE || "http://localhost:1234/v1";
-    const model = process.env.OPENAI_MODEL || "local-model";
+    const apiKey = process.env.OPENAI_API_KEY || "ollama"; // Ollama works with dummy keys
+    const baseUrl = process.env.OPENAI_API_BASE || "http://localhost:11434/v1";
+    // Many Ollama users default to a common model like llama3 or mistral, though 'local-model' is fine if aliased
+    const model = process.env.OPENAI_MODEL || "llama3";
 
     const allMessages = [
       { role: "system" as const, content: SYSTEM_PROMPT },

@@ -46,7 +46,7 @@ export default function ChatWidget() {
         ...m,
         {
           role: "assistant",
-          content: "ERROR: Connection to model failed. Check LM Studio config.",
+          content: "ERROR: Connection to model failed. Is your local Ollama instance fully running?",
         },
       ]);
     } finally {

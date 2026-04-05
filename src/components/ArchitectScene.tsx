@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState, useEffect, useCallback } from "react";
+import { useRef, useMemo, useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
@@ -9,6 +9,7 @@ import {
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
+import { DevInspectorRaycaster, DevInspectorUI, devStore } from "./DevInspector";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,15 +77,15 @@ const COUNT_LIMIT = 1200;
 // Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
 // so they all appear the same physical size regardless of latitude
 const SPHERE_Y = 1.6;
-const PHI_START = -4;  // degrees — bottom row sits just above the floor
-const PHI_END = 55;  // degrees — top row curves well overhead
+const PHI_START = -5;  // exactly calibrated so the CRT casings perfectly kiss the Y=0 floor
+const PHI_END = 55;
 
 // ─── EASY-TWEAK POSITIONING CONTROLS ──────────────────────────────────────────
 // Change these offsets to visually re-arrange the characters and camera!
 // The door is at roughly Z = -19.6
 export const ARCHITECT_CONFIG = {
-  // Camera starts at the center of the dome
-  cameraHome: new THREE.Vector3(0, 1.6, 0),
+  // Camera starts slightly further back from the center of the dome (positive Z is stepping backwards)
+  cameraHome: new THREE.Vector3(0, 1.6, 2.5),
   cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
   cameraLerpSpeed: 0.04,
 
@@ -115,6 +116,11 @@ function buildPositions(): MonitorPosition[] {
   for (let r = 0; r < ROWS; r++) {
     // Map each row to a latitude angle on a hemisphere
     const phi = (PHI_START + (r / (ROWS - 1)) * (PHI_END - PHI_START)) * (Math.PI / 180);
+    
+    // Physically drop any rows that extend mathematically far above the camera's locked vertical axis restrictions
+    // 27 degrees off the horizon tightly crops out the roof screens directly above the max locked vision angle
+    if (phi > 27 * (Math.PI / 180)) break;
+
     const rowRadius = RADIUS * Math.cos(phi);
     const rowY = SPHERE_Y + RADIUS * Math.sin(phi);
     // Force identical columns so the screens perfectly align vertically top-to-bottom
@@ -122,6 +128,12 @@ function buildPositions(): MonitorPosition[] {
 
     for (let i = 0; i < rowItems; i++) {
       const angle = (i / rowItems) * 2 * Math.PI - Math.PI;
+
+      // Mathematically CULL screens that are out of bounds of the locked camera to save memory!
+      // The camera only ever pans +/- 40 degrees from front (-Z), which combined with the camera's FOV means
+      // screens past ~100 degrees (1.8 radians) are universally invisible in production mode.
+      const isVisible = angle > -1.8 && angle < 1.8;
+
       const x = Math.sin(angle) * rowRadius;
       const y = rowY;
       const z = -Math.cos(angle) * rowRadius;
@@ -129,7 +141,7 @@ function buildPositions(): MonitorPosition[] {
       // Cut exactly around the new shorter door
       const isDoorGap = Math.abs(x) < 1.25 && y < 4.35 && z < 0;
 
-      if (!isDoorGap && pos.length < COUNT_LIMIT) {
+      if (isVisible && !isDoorGap && pos.length < COUNT_LIMIT) {
         pos.push({
           x,
           y,
@@ -498,31 +510,44 @@ interface DoorProps {
   onClick: () => void;
   hovered: boolean;
   onHover: (h: boolean) => void;
+  isDevActive?: boolean;
 }
 
-function Door({ onClick, hovered, onHover }: DoorProps) {
+function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
   const innerRef = useRef<THREE.Group>(null);
+  const leafRef = useRef<THREE.Group>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Subtle float toward viewer on hover relative to inner group
-  useFrame(() => {
+  useFrame((state, delta) => {
     if (!innerRef.current) return;
-    const targetZ = hovered ? 0.3 : 0;
+    const targetZ = hovered && !isOpen ? 0.3 : 0;
     innerRef.current.position.z = THREE.MathUtils.lerp(
       innerRef.current.position.z,
       targetZ,
       0.1
     );
+
+    if (leafRef.current) {
+      // Swing inward into the room by ~90 degrees
+      const targetRotation = isOpen ? 1.6 : 0; // positive pushes the left edge inward
+      leafRef.current.rotation.y = THREE.MathUtils.lerp(
+        leafRef.current.rotation.y,
+        targetRotation,
+        4 * delta
+      );
+    }
   });
 
   // Edge highlight material for door frame
   const frameMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#000000",
-        roughness: 0.8,
-        metalness: 0.4,
-        emissive: hovered ? "#1a1a1a" : "#000000",
-        emissiveIntensity: hovered ? 0.5 : 0,
+        color: "#888888",
+        roughness: 0.6,
+        metalness: 0.5,
+        emissive: "#444444",
+        emissiveIntensity: hovered ? 1.0 : 0.5,
       }),
     [hovered]
   );
@@ -542,7 +567,12 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
   return (
     <group
       position={[0, 1.6, -13.95]}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        if (isDevActive) return;
+        e.stopPropagation();
+        setIsOpen(true);
+        onClick();
+      }}
       onPointerOver={() => { onHover(true); document.body.style.cursor = "pointer"; }}
       onPointerOut={() => { onHover(false); document.body.style.cursor = "auto"; }}
     >
@@ -552,95 +582,91 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
           The group sits at world Y = 1.6, so the floor is at local Y = -1.6.
         */}
         {(() => {
-          const doorHeight = 4.3;
-          const doorWidth = 1.9;
+          // Mathematically grounded to span exactly from world Y=0 to Y=4.35 gap
           const floorY = -1.6;
-
-          // How much to slice off the bottom so it sits flush above the gap void
-          // Adjusted to 0.3 to roughly match the bottom edge of the lowest screens
-          const bottomChop = 0.3;
+          const doorHeight = 4.2;
+          const doorWidth = 1.9;
 
           // Outer frame (Architrave)
-          const frameThick = 0.22;
-          const frameDepth = 0.24;
-          const fullFrameH = doorHeight + frameThick;
-          // Subtracted chop from side columns
-          const frameH = fullFrameH - bottomChop;
-          const frameCenterY = floorY + bottomChop + frameH / 2;
+          const frameThick = 0.45;
+          const frameDepth = 0.26;
+          const frameH = doorHeight + frameThick;
 
           // Door leaf
           const leafDepth = 0.12;
-          const leafH = doorHeight - bottomChop;
-          const leafCenterY = floorY + bottomChop + leafH / 2;
+          const leafH = doorHeight;
+          const leafCenterY = floorY + leafH / 2;
 
-          // Doorknob (moved up to be slightly higher, classical height)
-          const knobY = floorY + bottomChop + 1.55;
-          // Knob X position (moved to left edge)
+          // Doorknob (standard waist height)
+          const knobY = floorY + 2.0;
           const knobX = -(doorWidth / 2 - 0.2);
 
           return (
             <>
               {/* Outer frame - Left */}
-              <mesh castShadow receiveShadow position={[-(doorWidth / 2 + frameThick / 2), frameCenterY, -0.1]}>
+              <mesh name="DoorFrameLeft" position={[-(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
                 <boxGeometry args={[frameThick, frameH, frameDepth]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
               {/* Outer frame - Right */}
-              <mesh castShadow receiveShadow position={[(doorWidth / 2 + frameThick / 2), frameCenterY, -0.1]}>
+              <mesh name="DoorFrameRight" position={[(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
                 <boxGeometry args={[frameThick, frameH, frameDepth]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
-              {/* Outer frame - Top lintel (anchored perfectly to original height) */}
-              <mesh castShadow receiveShadow position={[0, floorY + doorHeight + frameThick / 2, -0.09]}>
+              {/* Outer frame - Top lintel */}
+              <mesh name="DoorFrameTop" position={[0, floorY + doorHeight + frameThick / 2, -0.09]}>
                 <boxGeometry args={[doorWidth + frameThick * 2 + 0.1, frameThick, frameDepth + 0.04]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
 
-              {/* Main Door Solid Base (Flat, bland slab door) */}
-              <mesh castShadow receiveShadow position={[0, leafCenterY, 0]}>
-                <boxGeometry args={[doorWidth, leafH, leafDepth]} />
-                <primitive object={paneMat} attach="material" />
-              </mesh>
-
-              {/* High-Fidelity Doorknob Assembly */}
-              <group position={[knobX, knobY, leafDepth / 2 + 0.005]}>
-                {/* Hardware Rose (Circular Backplate) */}
-                <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                  {/* Made the rose backing physically larger */}
-                  <cylinderGeometry args={[0.075, 0.075, 0.015, 32]} />
-                  <meshStandardMaterial color="#666666" metalness={0.9} roughness={0.4} />
-                  <group rotation={[Math.PI / 2, 0, 0]}></group>
-                </mesh>
-                
-                {/* Knob Stem */}
-                <mesh castShadow position={[0, 0, 0.04]} rotation={[Math.PI / 2, 0, 0]}>
-                  {/* Thicker stem */}
-                  <cylinderGeometry args={[0.025, 0.025, 0.08, 32]} />
-                  <meshStandardMaterial color="#aaaaaa" metalness={0.9} roughness={0.3} />
-                </mesh>
-                
-                {/* Prominent Steel Ball Knob */}
-                <mesh castShadow position={[0, 0, 0.09]}>
-                  {/* Significantly oversized sphere to stand out heavily on the screen */}
-                  <sphereGeometry args={[0.085, 64, 64]} />
-                  <meshPhysicalMaterial 
-                    color="#ffffff" 
-                    metalness={1.0} 
-                    roughness={0.05} 
-                    clearcoat={1.0}
-                    clearcoatRoughness={0.1}
-                  />
+              {/* Pivot Hinge Group for swinging the door leaf */}
+              <group ref={leafRef} position={[doorWidth / 2, 0, 0]}>
+                {/* Main Door Solid Base (Flat, bland slab door) shifted relative to hinge */}
+                <mesh position={[-doorWidth / 2, leafCenterY, 0]}>
+                  <boxGeometry args={[doorWidth, leafH, leafDepth]} />
+                  <primitive object={paneMat} attach="material" />
                 </mesh>
 
-                {/* Classic Keyhole cut directly into the Rose */}
-                <mesh position={[0, -0.02, 0.008]}>
-                  <circleGeometry args={[0.01, 16]} />
-                  <meshBasicMaterial color="#000000" />
-                </mesh>
-                <mesh position={[0, -0.035, 0.008]}>
-                  <planeGeometry args={[0.012, 0.02]} />
-                  <meshBasicMaterial color="#000000" />
-                </mesh>
+                {/* High-Fidelity Doorknob Assembly shifted relative to hinge */}
+                <group position={[knobX - doorWidth / 2, knobY, leafDepth / 2 + 0.005]}>
+                  {/* Hardware Rose (Circular Backplate) */}
+                  <mesh position={[0, 0, 0]}>
+                    {/* Made the rose backing physically larger */}
+                    <cylinderGeometry args={[0.075, 0.075, 0.015, 32]} />
+                    <meshStandardMaterial color="#666666" metalness={0.9} roughness={0.4} />
+                    <group rotation={[Math.PI / 2, 0, 0]}></group>
+                  </mesh>
+
+                  {/* Knob Stem */}
+                  <mesh position={[0, 0, 0.04]} rotation={[Math.PI / 2, 0, 0]}>
+                    {/* Thicker stem */}
+                    <cylinderGeometry args={[0.025, 0.025, 0.08, 32]} />
+                    <meshStandardMaterial color="#aaaaaa" metalness={0.9} roughness={0.3} />
+                  </mesh>
+
+                  {/* Prominent Steel Ball Knob */}
+                  <mesh position={[0, 0, 0.09]}>
+                    {/* Significantly oversized sphere to stand out heavily on the screen */}
+                    <sphereGeometry args={[0.085, 64, 64]} />
+                    <meshPhysicalMaterial
+                      color="#ffffff"
+                      metalness={1.0}
+                      roughness={0.05}
+                      clearcoat={1.0}
+                      clearcoatRoughness={0.1}
+                    />
+                  </mesh>
+
+                  {/* Classic Keyhole cut directly into the Rose */}
+                  <mesh position={[0, -0.02, 0.008]}>
+                    <circleGeometry args={[0.01, 16]} />
+                    <meshBasicMaterial color="#000000" />
+                  </mesh>
+                  <mesh position={[0, -0.035, 0.008]}>
+                    <planeGeometry args={[0.012, 0.02]} />
+                    <meshBasicMaterial color="#000000" />
+                  </mesh>
+                </group>
               </group>
             </>
           );
@@ -753,6 +779,7 @@ interface SceneProps {
   onDoorHover: (h: boolean) => void;
   onDoorClick: () => void;
   videoPaths: string[];
+  isDevActive?: boolean;
 }
 
 function Scene({
@@ -765,6 +792,7 @@ function Scene({
   onDoorHover,
   onDoorClick,
   videoPaths,
+  isDevActive,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -801,11 +829,12 @@ function Scene({
         onArrived={onCameraArrived}
       />
 
-      {/* Lighting */}
-      <ambientLight intensity={0.6} />
+      {/* Lighting - Subtly graded with a faintly noticeable Matrix green tint */}
+      <ambientLight intensity={0.55} color="#dce8e3" />
       <directionalLight
         position={[0, 12, 5]}
-        intensity={1.4}
+        intensity={1.3}
+        color="#f0f8f5" // Nearly white with a 1% green coolness
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-far={60}
@@ -814,30 +843,30 @@ function Scene({
         shadow-camera-top={15}
         shadow-camera-bottom={-5}
       />
-      {/* Subtle fill from behind viewer */}
-      <directionalLight position={[0, 4, 8]} intensity={0.3} color="#e0e8ff" />
+      {/* Subtle fill from behind viewer, pushing deep, faint cinematic green into shadows */}
+      <directionalLight position={[0, 4, 8]} intensity={0.3} color="#0c1b14" />
 
       <ScreenGlow />
 
-      {/* Background & fog */}
-      <color attach="background" args={["#111111"]} />
-      <fog attach="fog" args={["#111111", 20, 45]} />
+      {/* Background & fog: graded to almost pure black/grey, with only the slimmest hint of dark green */}
+      <color attach="background" args={["#060a08"]} />
+      <fog attach="fog" args={["#060a08", 16, 45]} />
 
       {/* Reflective floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[100, 100]} />
         <MeshReflectorMaterial
-          blur={[750, 750]}
+          blur={[1200, 1200]}
           resolution={1024}
-          mixBlur={2}
-          mixStrength={60}
-          roughness={0.6}
+          mixBlur={3}
+          mixStrength={35}
+          roughness={0.75}
           depthScale={1.2}
           minDepthThreshold={0.8}
           maxDepthThreshold={3.5}
           color="#eeeeee83"
           metalness={0.1}
-          mirror={0.65}
+          mirror={0.35}
         />
       </mesh>
 
@@ -850,7 +879,7 @@ function Scene({
       <ScreenBezels positions={positions} />
 
       {/* Door */}
-      <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
+      <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} isDevActive={isDevActive} />
 
       {/* ── Neo (Standing, left side) ────────────────────────────── */}
       <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
@@ -863,19 +892,19 @@ function Scene({
         <ArchitectModel position={[0, 0, 0]} />
       </group>
 
-      {/* OrbitControls — look-only, no pan/zoom, locked to front 240° */}
+      {/* OrbitControls — look-only in production, fully unlocked noclip in Dev Mode */}
       <OrbitControls
         ref={orbitRef}
-        enablePan={false}
-        enableZoom={false}
+        enablePan={!!isDevActive}
+        enableZoom={!!isDevActive}
         enableDamping
         dampingFactor={0.08}
-        // Tighten vertical (Y) movement to hide extreme ceiling/floor
-        maxPolarAngle={Math.PI / 2 + 0.05}
-        minPolarAngle={Math.PI / 2.2}
-        // Tighten horizontal (X) to 80 degrees total (40 left, 40 right)
-        minAzimuthAngle={-40 * (Math.PI / 180)}
-        maxAzimuthAngle={40 * (Math.PI / 180)}
+        // Tighten vertical (Y) movement to hide extreme ceiling/floor, unless in dev mode
+        maxPolarAngle={isDevActive ? Math.PI : Math.PI / 2 + 0.05}
+        minPolarAngle={isDevActive ? 0 : Math.PI / 2.2}
+        // Tighten horizontal (X) to 80 degrees total, unless in dev mode
+        minAzimuthAngle={isDevActive ? -Infinity : -40 * (Math.PI / 180)}
+        maxAzimuthAngle={isDevActive ? Infinity : 40 * (Math.PI / 180)}
         rotateSpeed={0.45}
       />
     </>
@@ -885,6 +914,7 @@ function Scene({
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function ArchitectScene({ onDoorClick, videoPaths = [] }: ArchitectSceneProps) {
+  const isDevActive = useSyncExternalStore(devStore.subscribe, () => devStore.isDevActive, () => false);
   const positions = useMemo(() => buildPositions(), []);
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen | null>(null);
@@ -907,13 +937,13 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
 
   const handleMonitorClick = useCallback(
     (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => {
-      if (isReturning || activeScreen) return;
+      if (isDevActive || isReturning || activeScreen) return;
       const src = getVideoSrc(instanceId);
       setActiveScreen({ instanceId, worldPosition: worldPos, videoSrc: src });
       setCameraTarget(worldPos);
       setCameraLookAtTarget(lookAtPos);
     },
-    [isReturning, activeScreen, getVideoSrc]
+    [isDevActive, isReturning, activeScreen, getVideoSrc]
   );
 
   // Camera has finished moving
@@ -974,8 +1004,12 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           onDoorHover={setDoorHovered}
           onDoorClick={handleDoorClick}
           videoPaths={videoPaths}
+          isDevActive={isDevActive}
         />
+        <DevInspectorRaycaster />
       </Canvas>
+
+      <DevInspectorUI />
 
       {/* Fullscreen video overlay */}
       {videoVisible && activeScreen && (

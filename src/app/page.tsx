@@ -5,6 +5,7 @@ import HeroSection from "@/components/HeroSection";
 import ModernAchievements from "@/components/ModernAchievements";
 import TechStack from "@/components/TechStack";
 import ModernContact from "@/components/ModernContact";
+import MouseGlitchText from "@/components/MouseGlitchText";
 
 const achievements = [
   {
@@ -40,6 +41,16 @@ const achievements = [
 export default function Home() {
   return (
     <>
+      {/* Unobstructive, massive centered floating text overlay */}
+      <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold mix-blend-screen">
+        <MouseGlitchText 
+          text="ALLEN" 
+          className="text-[12vw] md:text-[8rem] tracking-[0.3em] font-black mix-blend-screen" 
+          glitchRadius={180}
+          autoDissolveDelay={5000}
+        />
+      </div>
+
       <LandingDoorSequence>
         <EasterEggManager>
           <main className="relative z-10 min-h-screen">
