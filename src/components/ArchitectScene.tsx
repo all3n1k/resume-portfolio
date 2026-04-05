@@ -8,6 +8,36 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
+import ArchitectModel from "./ArchitectModel";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function createRoundedPlaneGeo(width: number, height: number, radius: number) {
+  const shape = new THREE.Shape();
+  const x = -width / 2;
+  const y = -height / 2;
+  shape.moveTo(x, y + radius);
+  shape.lineTo(x, y + height - radius);
+  shape.quadraticCurveTo(x, y + height, x + radius, y + height);
+  shape.lineTo(x + width - radius, y + height);
+  shape.quadraticCurveTo(x + width, y + height, x + width, y + height - radius);
+  shape.lineTo(x + width, y + radius);
+  shape.quadraticCurveTo(x + width, y, x + width - radius, y);
+  shape.lineTo(x + radius, y);
+  shape.quadraticCurveTo(x, y, x, y + radius);
+  const geo = new THREE.ShapeGeometry(shape);
+
+  // Fix default ShapeGeometry UV mapping so it spans exactly [0.0, 1.0] across the bounding box
+  const uvs = geo.attributes.uv;
+  for (let i = 0; i < uvs.count; i++) {
+    const vx = uvs.getX(i);
+    const vy = uvs.getY(i);
+    uvs.setXY(i, (vx - x) / width, (vy - y) / height);
+  }
+  uvs.needsUpdate = true;
+
+  return geo;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +69,8 @@ interface ArchitectSceneProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RADIUS = 14;
-const ITEMS_PER_ROW = 75;
+// Increased packing density since cases are now narrower
+const ITEMS_PER_ROW = 85;
 const ROWS = 18;
 const COUNT_LIMIT = 1200;
 // Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
@@ -59,11 +90,11 @@ export const ARCHITECT_CONFIG = {
 
   // Neo on the LEFT side, angled slightly right toward Architect
   // [X (left/right), Y (up/down), Z (forward/back)]
-  neoPosition: [-5, 0, -8] as [number, number, number],
+  neoPosition: [-4.85, 0, -8] as [number, number, number],
   neoRotation: [0, Math.PI / 2, 0] as [number, number, number], // slight turn right
 
   // Architect on the RIGHT side, angled slightly left toward Neo
-  architectPosition: [5, 0, -8] as [number, number, number],
+  architectPosition: [4.85, 0, -8] as [number, number, number],
   architectRotation: [0, -Math.PI / 2, 0] as [number, number, number], // slight turn left
 };
 
@@ -96,7 +127,7 @@ function buildPositions(): MonitorPosition[] {
       const z = -Math.cos(angle) * rowRadius;
 
       // Cut exactly around the new shorter door
-      const isDoorGap = Math.abs(x) < 1.6 && y < 3.85 && z < 0;
+      const isDoorGap = Math.abs(x) < 1.25 && y < 4.35 && z < 0;
 
       if (!isDoorGap && pos.length < COUNT_LIMIT) {
         pos.push({
@@ -201,8 +232,8 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   // RoundedBox is not InstancedMesh-friendly directly, so we extract its geometry
   const caseGeo = useMemo(() => {
     // Manually create a rounded box via BufferGeometry subdivision trick
-    // Using a slightly inset box with bevel via segments
-    const geo = new THREE.BoxGeometry(1.18, 0.78, 1.18, 1, 1, 1);
+    // Width shrunk to 1.04 to mimic a 4:3 CRT casing
+    const geo = new THREE.BoxGeometry(1.04, 0.78, 1.18, 1, 1, 1);
     return geo;
   }, []);
 
@@ -254,7 +285,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   );
 
   // Invisible hit-box geometry for reliable raycasting & hover glow
-  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.25, 0.85, 1.25), []);
+  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.10, 0.85, 1.25), []);
   const hitMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
@@ -355,7 +386,7 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
       vid.playsInline = true;
       // Autoplay silently
       vid.play().catch((err) => console.log("Autoplay prevented:", err));
-      
+
       const tex = new THREE.VideoTexture(vid);
       tex.colorSpace = THREE.SRGBColorSpace;
 
@@ -382,10 +413,11 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
     meshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
+  // Width shrunk to 0.85 to mimic 4:3 CRT aspect
+  const roundScreenGeo = useMemo(() => createRoundedPlaneGeo(0.85, 0.64, 0.08), []);
+
   return (
-    <instancedMesh ref={meshRef} args={[undefined, screenMat, positions.length]} frustumCulled={false}>
-      <planeGeometry args={[0.92, 0.64]} />
-    </instancedMesh>
+    <instancedMesh ref={meshRef} args={[roundScreenGeo, screenMat, positions.length]} frustumCulled={false} />
   );
 }
 
@@ -406,7 +438,8 @@ function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
     []
   );
 
-  const bezelGeo = useMemo(() => new THREE.PlaneGeometry(1.02, 0.66), []);
+  // Width shrunk to proportionally match monitor 4:3 size
+  const bezelGeo = useMemo(() => createRoundedPlaneGeo(0.91, 0.68, 0.1), []);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -485,11 +518,11 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
   const frameMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#e8e8e8",
-        roughness: 0.2,
-        metalness: 0.15,
-        emissive: hovered ? "#ffffff" : "#888888",
-        emissiveIntensity: hovered ? 0.08 : 0.02,
+        color: "#000000",
+        roughness: 0.8,
+        metalness: 0.4,
+        emissive: hovered ? "#1a1a1a" : "#000000",
+        emissiveIntensity: hovered ? 0.5 : 0,
       }),
     [hovered]
   );
@@ -519,37 +552,45 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
           The group sits at world Y = 1.6, so the floor is at local Y = -1.6.
         */}
         {(() => {
-          const doorHeight = 3.8;
+          const doorHeight = 4.3;
           const doorWidth = 1.9;
           const floorY = -1.6;
-          
+
+          // How much to slice off the bottom so it sits flush above the gap void
+          // Adjusted to 0.3 to roughly match the bottom edge of the lowest screens
+          const bottomChop = 0.3;
+
           // Outer frame (Architrave)
           const frameThick = 0.22;
           const frameDepth = 0.24;
-          const frameH = doorHeight + frameThick;
+          const fullFrameH = doorHeight + frameThick;
+          // Subtracted chop from side columns
+          const frameH = fullFrameH - bottomChop;
+          const frameCenterY = floorY + bottomChop + frameH / 2;
 
           // Door leaf
           const leafDepth = 0.12;
-          const leafCenterY = floorY + doorHeight / 2;
+          const leafH = doorHeight - bottomChop;
+          const leafCenterY = floorY + bottomChop + leafH / 2;
 
-          // Doorknob (scaled up for the 3.8m tall door, standard is ~0.9m on a 2.1m door, so ~1.65m here)
-          const knobY = floorY + 1.65;
-          // Knob X position (close to right edge)
-          const knobX = doorWidth / 2 - 0.2;
+          // Doorknob (moved up to be slightly higher, classical height)
+          const knobY = floorY + bottomChop + 1.55;
+          // Knob X position (moved to left edge)
+          const knobX = -(doorWidth / 2 - 0.2);
 
           return (
             <>
               {/* Outer frame - Left */}
-              <mesh castShadow receiveShadow position={[-(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
+              <mesh castShadow receiveShadow position={[-(doorWidth / 2 + frameThick / 2), frameCenterY, -0.1]}>
                 <boxGeometry args={[frameThick, frameH, frameDepth]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
               {/* Outer frame - Right */}
-              <mesh castShadow receiveShadow position={[(doorWidth / 2 + frameThick / 2), floorY + frameH / 2, -0.1]}>
+              <mesh castShadow receiveShadow position={[(doorWidth / 2 + frameThick / 2), frameCenterY, -0.1]}>
                 <boxGeometry args={[frameThick, frameH, frameDepth]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
-              {/* Outer frame - Top lintel (slightly wider/deeper for a crown effect) */}
+              {/* Outer frame - Top lintel (anchored perfectly to original height) */}
               <mesh castShadow receiveShadow position={[0, floorY + doorHeight + frameThick / 2, -0.09]}>
                 <boxGeometry args={[doorWidth + frameThick * 2 + 0.1, frameThick, frameDepth + 0.04]} />
                 <primitive object={frameMat} attach="material" />
@@ -557,34 +598,47 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
 
               {/* Main Door Solid Base (Flat, bland slab door) */}
               <mesh castShadow receiveShadow position={[0, leafCenterY, 0]}>
-                <boxGeometry args={[doorWidth, doorHeight, leafDepth]} />
+                <boxGeometry args={[doorWidth, leafH, leafDepth]} />
                 <primitive object={paneMat} attach="material" />
               </mesh>
 
               {/* High-Fidelity Doorknob Assembly */}
-              <group position={[knobX, knobY, leafDepth / 2 + 0.01]}>
-                {/* Backplate */}
+              <group position={[knobX, knobY, leafDepth / 2 + 0.005]}>
+                {/* Hardware Rose (Circular Backplate) */}
                 <mesh castShadow receiveShadow position={[0, 0, 0]}>
-                  <boxGeometry args={[0.09, 0.38, 0.02]} />
-                  <meshStandardMaterial color="#888888" metalness={0.7} roughness={0.3} />
+                  {/* Made the rose backing physically larger */}
+                  <cylinderGeometry args={[0.075, 0.075, 0.015, 32]} />
+                  <meshStandardMaterial color="#666666" metalness={0.9} roughness={0.4} />
+                  <group rotation={[Math.PI / 2, 0, 0]}></group>
                 </mesh>
+                
                 {/* Knob Stem */}
-                <mesh castShadow position={[0, 0.06, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
-                  <cylinderGeometry args={[0.018, 0.018, 0.06, 16]} />
-                  <meshStandardMaterial color="#aaaaaa" metalness={0.8} roughness={0.2} />
+                <mesh castShadow position={[0, 0, 0.04]} rotation={[Math.PI / 2, 0, 0]}>
+                  {/* Thicker stem */}
+                  <cylinderGeometry args={[0.025, 0.025, 0.08, 32]} />
+                  <meshStandardMaterial color="#aaaaaa" metalness={0.9} roughness={0.3} />
                 </mesh>
-                {/* Actual Knob (Sphere) */}
-                <mesh castShadow position={[0, 0.06, 0.07]}>
-                  <sphereGeometry args={[0.045, 32, 32]} />
-                  <meshStandardMaterial color="#eeeeee" metalness={1.0} roughness={0.1} />
+                
+                {/* Prominent Steel Ball Knob */}
+                <mesh castShadow position={[0, 0, 0.09]}>
+                  {/* Significantly oversized sphere to stand out heavily on the screen */}
+                  <sphereGeometry args={[0.085, 64, 64]} />
+                  <meshPhysicalMaterial 
+                    color="#ffffff" 
+                    metalness={1.0} 
+                    roughness={0.05} 
+                    clearcoat={1.0}
+                    clearcoatRoughness={0.1}
+                  />
                 </mesh>
-                {/* Keyhole cutout */}
-                <mesh position={[0, -0.1, 0.011]}>
-                  <circleGeometry args={[0.012, 16]} />
+
+                {/* Classic Keyhole cut directly into the Rose */}
+                <mesh position={[0, -0.02, 0.008]}>
+                  <circleGeometry args={[0.01, 16]} />
                   <meshBasicMaterial color="#000000" />
                 </mesh>
-                <mesh position={[0, -0.12, 0.011]}>
-                  <planeGeometry args={[0.018, 0.035]} />
+                <mesh position={[0, -0.035, 0.008]}>
+                  <planeGeometry args={[0.012, 0.02]} />
                   <meshBasicMaterial color="#000000" />
                 </mesh>
               </group>
@@ -727,7 +781,7 @@ function Scene({
   useEffect(() => {
     const homePos = ARCHITECT_CONFIG.cameraHome;
     const homeLookAt = ARCHITECT_CONFIG.cameraLookAtHome;
-    
+
     // Explicitly reset position in case the browser cached the modified camera state
     camera.position.copy(homePos);
     camera.lookAt(homeLookAt);
@@ -800,123 +854,13 @@ function Scene({
 
       {/* ── Neo (Standing, left side) ────────────────────────────── */}
       <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
-        <NeoModel scale={0.15} position={[0, 0, 0]} />
+        <NeoModel scale={0.022} position={[0, 0, 0]} />
       </group>
 
       {/* ── The Architect (Seated, right side) ────────────────────── */}
       <group position={ARCHITECT_CONFIG.architectPosition} rotation={ARCHITECT_CONFIG.architectRotation}>
-        {/* ─ High-back chair ─ */}
-        {/* Seat cushion */}
-        <mesh position={[0, 0.52, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.7, 0.1, 0.65]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.85} />
-        </mesh>
-        {/* Chair back */}
-        <mesh position={[0, 0.95, -0.3]} castShadow>
-          <boxGeometry args={[0.68, 0.85, 0.08]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.85} />
-        </mesh>
-        {/* Left armrest */}
-        <mesh position={[-0.35, 0.62, -0.08]} castShadow>
-          <boxGeometry args={[0.06, 0.06, 0.45]} />
-          <meshStandardMaterial color="#222" roughness={0.8} />
-        </mesh>
-        {/* Right armrest */}
-        <mesh position={[0.35, 0.62, -0.08]} castShadow>
-          <boxGeometry args={[0.06, 0.06, 0.45]} />
-          <meshStandardMaterial color="#222" roughness={0.8} />
-        </mesh>
-        {/* Chair legs (4) */}
-        <mesh position={[-0.28, 0.22, 0.25]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
-          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
-        </mesh>
-        <mesh position={[0.28, 0.22, 0.25]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
-          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
-        </mesh>
-        <mesh position={[-0.28, 0.22, -0.25]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
-          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
-        </mesh>
-        <mesh position={[0.28, 0.22, -0.25]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.44, 6]} />
-          <meshStandardMaterial color="#333" metalness={0.6} roughness={0.3} />
-        </mesh>
-
-        {/* ─ Architect figure (seated) ─ */}
-        {/* Head */}
-        <mesh position={[0, 1.42, -0.05]} castShadow>
-          <sphereGeometry args={[0.14, 12, 8]} />
-          <meshStandardMaterial color="#d4a574" roughness={0.8} />
-        </mesh>
-        {/* White hair */}
-        <mesh position={[0, 1.5, -0.08]} castShadow>
-          <sphereGeometry args={[0.145, 8, 6]} />
-          <meshStandardMaterial color="#e8e8e8" roughness={0.95} />
-        </mesh>
-        {/* Beard */}
-        <mesh position={[0, 1.34, 0.08]}>
-          <boxGeometry args={[0.14, 0.1, 0.06]} />
-          <meshStandardMaterial color="#cccccc" roughness={0.95} />
-        </mesh>
-        {/* Neck */}
-        <mesh position={[0, 1.26, -0.02]} castShadow>
-          <cylinderGeometry args={[0.06, 0.07, 0.1, 8]} />
-          <meshStandardMaterial color="#d4a574" roughness={0.8} />
-        </mesh>
-        {/* Torso — light grey suit jacket */}
-        <mesh position={[0, 1.0, -0.05]} castShadow>
-          <boxGeometry args={[0.44, 0.45, 0.26]} />
-          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
-        </mesh>
-        {/* Vest (darker layer) */}
-        <mesh position={[0, 1.0, 0.06]}>
-          <boxGeometry args={[0.30, 0.38, 0.06]} />
-          <meshStandardMaterial color="#999999" roughness={0.7} />
-        </mesh>
-        {/* Tie */}
-        <mesh position={[0, 1.02, 0.1]}>
-          <boxGeometry args={[0.06, 0.32, 0.02]} />
-          <meshStandardMaterial color="#888888" roughness={0.5} />
-        </mesh>
-        {/* Left arm (resting on armrest) */}
-        <mesh position={[-0.3, 0.85, 0.05]} castShadow>
-          <boxGeometry args={[0.12, 0.45, 0.14]} />
-          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
-        </mesh>
-        {/* Right arm */}
-        <mesh position={[0.3, 0.85, 0.05]} castShadow>
-          <boxGeometry args={[0.12, 0.45, 0.14]} />
-          <meshStandardMaterial color="#c8c8c8" roughness={0.6} />
-        </mesh>
-        {/* Lap / upper legs (seated, horizontal) */}
-        <mesh position={[-0.1, 0.56, 0.15]} castShadow>
-          <boxGeometry args={[0.16, 0.1, 0.45]} />
-          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
-        </mesh>
-        <mesh position={[0.1, 0.56, 0.15]} castShadow>
-          <boxGeometry args={[0.16, 0.1, 0.45]} />
-          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
-        </mesh>
-        {/* Lower legs (hanging down) */}
-        <mesh position={[-0.1, 0.25, 0.35]} castShadow>
-          <boxGeometry args={[0.14, 0.5, 0.14]} />
-          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
-        </mesh>
-        <mesh position={[0.1, 0.25, 0.35]} castShadow>
-          <boxGeometry args={[0.14, 0.5, 0.14]} />
-          <meshStandardMaterial color="#b0b0b0" roughness={0.65} />
-        </mesh>
-        {/* Shoes */}
-        <mesh position={[-0.1, 0.02, 0.4]}>
-          <boxGeometry args={[0.14, 0.06, 0.22]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
-        </mesh>
-        <mesh position={[0.1, 0.02, 0.4]}>
-          <boxGeometry args={[0.14, 0.06, 0.22]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
-        </mesh>
+        {/* ─ Architect Component ─ */}
+        <ArchitectModel position={[0, 0, 0]} />
       </group>
 
       {/* OrbitControls — look-only, no pan/zoom, locked to front 240° */}

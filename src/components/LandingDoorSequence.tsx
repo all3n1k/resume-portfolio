@@ -38,7 +38,7 @@ function MatrixRain({ onMidpoint, onComplete }: MatrixRainProps) {
     let frame: number;
     const start = performance.now();
     const FADE_IN = 400;
-    const HOLD = 600;
+    const HOLD = 800;
     const FADE_OUT = 500;
     const TOTAL = FADE_IN + HOLD + FADE_OUT;
 

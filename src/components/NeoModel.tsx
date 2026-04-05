@@ -5,7 +5,46 @@ import { SkeletonUtils } from 'three-stdlib'
 
 const texRoot = '/neo/';
 
+// Set this to false to switch back to the original animated Neo with texture mapping
+const TEST_STATIC = true;
+
 export function Model(props: React.ComponentProps<'group'>) {
+  if (TEST_STATIC) {
+    return <StaticNeoModel {...props} />
+  }
+  return <OriginalNeoModel {...props} />
+}
+
+function StaticNeoModel(props: React.ComponentProps<'group'>) {
+  const group = React.useRef<THREE.Group>(null)
+  const fbx = useFBX('/neo/NEOMODEL.fbx');
+  const clone = useMemo(() => SkeletonUtils.clone(fbx), [fbx]);
+  
+  useEffect(() => {
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+           if (Array.isArray(mesh.material)) {
+               mesh.material.forEach((mat) => mat.side = THREE.DoubleSide);
+           } else {
+               mesh.material.side = THREE.DoubleSide;
+           }
+        }
+      }
+    });
+  }, [clone]);
+
+  return (
+    <group ref={group} {...props} dispose={null}>
+      <primitive object={clone} />
+    </group>
+  );
+}
+
+function OriginalNeoModel(props: React.ComponentProps<'group'>) {
   const group = React.useRef<THREE.Group>(null)
 
   const fbx = useFBX('/neo/Neo.fbx')
@@ -70,6 +109,6 @@ export function Model(props: React.ComponentProps<'group'>) {
   )
 }
 
+useFBX.preload('/neo/NEOMODEL.fbx')
 useFBX.preload('/neo/Neo.fbx')
 useFBX.preload('/neo/Breathing Idle.fbx')
-
