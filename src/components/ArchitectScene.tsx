@@ -84,8 +84,8 @@ const PHI_END = 55;
 // Change these offsets to visually re-arrange the characters and camera!
 // The door is at roughly Z = -19.6
 export const ARCHITECT_CONFIG = {
-  // Camera starts slightly further back from the center of the dome (positive Z is stepping backwards)
-  cameraHome: new THREE.Vector3(0, 1.6, 2.5),
+  // Camera sits at the center of the monitor dome
+  cameraHome: new THREE.Vector3(0, 1.6, 0),
   cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
   cameraLerpSpeed: 0.04,
 
@@ -116,7 +116,7 @@ function buildPositions(): MonitorPosition[] {
   for (let r = 0; r < ROWS; r++) {
     // Map each row to a latitude angle on a hemisphere
     const phi = (PHI_START + (r / (ROWS - 1)) * (PHI_END - PHI_START)) * (Math.PI / 180);
-    
+
     // Physically drop any rows that extend mathematically far above the camera's locked vertical axis restrictions
     // 27 degrees off the horizon tightly crops out the roof screens directly above the max locked vision angle
     if (phi > 27 * (Math.PI / 180)) break;
@@ -384,33 +384,92 @@ interface GreenScreensProps {
 }
 
 function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // Map the first Focusee MP4 to a permanent looping video texture spanning all screens
-  const screenMat = useMemo(() => {
-    if (typeof window !== "undefined" && videoPaths.length > 0) {
+  // Create one video + canvas + material per video path (now using tiny 320x240 transcodes)
+  const screenData = useMemo(() => {
+    if (typeof window === "undefined" || videoPaths.length === 0) {
+      return [{ mat: new THREE.MeshBasicMaterial({ color: "#00ff41" }), vid: null, ctx: null, tex: null }];
+    }
+
+    return videoPaths.map((src) => {
       const vid = document.createElement("video");
-      vid.src = videoPaths[0]; // Share the first video stream
+      vid.src = src;
       vid.crossOrigin = "Anonymous";
       vid.loop = true;
       vid.muted = true;
       vid.playsInline = true;
-      // Autoplay silently
       vid.play().catch((err) => console.log("Autoplay prevented:", err));
 
-      const tex = new THREE.VideoTexture(vid);
+      const cvs = document.createElement("canvas");
+      cvs.width = 256;
+      cvs.height = 192;
+      const ctx = cvs.getContext("2d")!;
+
+      const tex = new THREE.CanvasTexture(cvs);
       tex.colorSpace = THREE.SRGBColorSpace;
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
 
-      return new THREE.MeshBasicMaterial({
-        map: tex,
-        toneMapped: false,
-      });
-    }
+      const mat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+      return { mat, vid, ctx, tex };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    // Fallback green glow if no videos are configured
-    return new THREE.MeshBasicMaterial({ color: "#00ff41" });
-  }, [videoPaths]);
+  const screenMats = useMemo(() => screenData.map((d) => d.mat), [screenData]);
+
+  // Draw loops with proper cleanup
+  useEffect(() => {
+    let cancelled = false;
+
+    screenData.forEach(({ vid, ctx, tex }) => {
+      if (!vid || !ctx || !tex) return;
+      vid.play().catch(() => {});
+
+      let lastDraw = 0;
+      const drawLoop = (now: number) => {
+        if (cancelled) return;
+        requestAnimationFrame(drawLoop);
+        if (now - lastDraw < 42) return; // ~24fps
+        lastDraw = now;
+        if (vid.readyState >= 2) {
+          ctx.drawImage(vid, 0, 0, 256, 192);
+          tex.needsUpdate = true;
+        }
+      };
+      requestAnimationFrame(drawLoop);
+    });
+
+    return () => { cancelled = true; };
+  }, [screenData]);
+
+  // Split positions round-robin by video index
+  const groups = useMemo(() => {
+    const g: MonitorPosition[][] = screenMats.map(() => []);
+    positions.forEach((p, i) => { g[i % screenMats.length].push(p); });
+    return g;
+  }, [positions, screenMats]);
+
+  const roundScreenGeo = useMemo(() => createRoundedPlaneGeo(0.85, 0.64, 0.08), []);
+
+  return (
+    <>
+      {groups.map((groupPositions, gi) => (
+        <GreenScreenGroup key={gi} positions={groupPositions} material={screenMats[gi]} geometry={roundScreenGeo} dummy={dummy} />
+      ))}
+    </>
+  );
+}
+
+function GreenScreenGroup({ positions, material, geometry, dummy }: {
+  positions: MonitorPosition[];
+  material: THREE.MeshBasicMaterial;
+  geometry: THREE.BufferGeometry;
+  dummy: THREE.Object3D;
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -425,11 +484,8 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
     meshRef.current.computeBoundingSphere();
   }, [positions, dummy]);
 
-  // Width shrunk to 0.85 to mimic 4:3 CRT aspect
-  const roundScreenGeo = useMemo(() => createRoundedPlaneGeo(0.85, 0.64, 0.08), []);
-
   return (
-    <instancedMesh ref={meshRef} args={[roundScreenGeo, screenMat, positions.length]} frustumCulled={false} />
+    <instancedMesh ref={meshRef} args={[geometry, material, positions.length]} frustumCulled={false} />
   );
 }
 
@@ -748,8 +804,10 @@ function VideoOverlay({ src, onClose }: VideoOverlayProps) {
       <video
         src={src}
         autoPlay
+        muted
         loop
         playsInline
+        preload="auto"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
       />
 
@@ -926,11 +984,12 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const [isDoorApproach, setIsDoorApproach] = useState(false);
   const pendingDoorCallback = useRef<(() => void) | null>(null);
 
-  // Get video src for a given monitor instance
+  // Get video src for the fullscreen overlay — swap _sm transcodes back to original full-res
   const getVideoSrc = useCallback(
     (instanceId: number): string => {
       if (!videoPaths.length) return "";
-      return videoPaths[instanceId % videoPaths.length];
+      const smPath = videoPaths[instanceId % videoPaths.length];
+      return smPath.replace("_sm.mp4", ".mp4");
     },
     [videoPaths]
   );

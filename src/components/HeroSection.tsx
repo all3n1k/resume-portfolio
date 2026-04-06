@@ -133,6 +133,9 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               </div>
             </motion.div>
 
+
+
+
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -198,13 +201,47 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
             </motion.div>
           </div>
 
-          {/* Right — Terminal */}
+          {/* Right — Portrait */}
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 1.0, delay: 0.3 }}
+            className="relative flex items-end justify-center"
           >
-            <TerminalBlock />
+            {/* Ambient glow behind portrait */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-gradient-radial from-green-500/15 via-emerald-500/5 to-transparent rounded-full blur-[80px] pointer-events-none" />
+            
+            {/* Portrait container */}
+            <div className="relative w-full max-w-[420px] group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/allen-portrait.png" 
+                alt="Allen - Security Researcher & Full-Stack Engineer"
+                className="relative z-10 w-full h-auto object-contain drop-shadow-2xl"
+                style={{ 
+                  filter: "contrast(1.08) saturate(0.9)",
+                  maxHeight: "75vh",
+                }}
+              />
+              
+              {/* CRT scanline overlay */}
+              <div 
+                className="absolute inset-0 z-20 pointer-events-none opacity-[0.08]"
+                style={{
+                  background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.08) 2px, rgba(0,255,65,0.08) 4px)",
+                }}
+              />
+
+              {/* Bottom fade into page background */}
+              <div className="absolute bottom-0 left-0 right-0 h-1/3 z-20 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+
+              {/* Subtle green edge glow on hover */}
+              <div className="absolute inset-0 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                style={{
+                  boxShadow: "inset 0 0 80px rgba(0,255,65,0.07)",
+                }}
+              />
+            </div>
           </motion.div>
         </div>
       </div>

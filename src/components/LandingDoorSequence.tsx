@@ -8,9 +8,10 @@ interface LandingDoorSequenceProps {
   children: React.ReactNode;
 }
 
-// Video pool — every monitor cycles through these on click
+// Video pool for CRT background screens — small 320x240 transcodes for GPU-friendly decode
 const SCREEN_VIDEOS = [
-  "/Screenvideos/SCREENCONTENT.mp4",
+  "/Screenvideos/SCREENCONTENT_sm.mp4",
+  "/Screenvideos/SCREENCONTENT2_sm.mp4",
 ];
 
 // ─── Matrix Rain Transition Overlay ──────────────────────────────────────────
