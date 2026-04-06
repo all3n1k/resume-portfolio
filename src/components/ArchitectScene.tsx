@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useMemo, useState, useEffect, useCallback, useSyncExternalStore } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
   OrbitControls,
 } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
@@ -99,14 +100,7 @@ export const ARCHITECT_CONFIG = {
   architectRotation: [0, -Math.PI / 2, 0] as [number, number, number], // slight turn left
 };
 
-// Fake agent lines for each "screen type" (cycles via index % AGENT_LINES.length)
-const AGENT_LINES: string[][] = [
-  ["> INIT AGENT_04", "scanning nodes...", "FOUND: 142 targets", "> MAPPING...", "eta: 00:03:12", "> STATUS: ACTIVE", "threads: 8/8", "> OUTPUT READY"],
-  ["> NEURAL_SYNC v2", "loss: 0.00312", "epoch 847/1000", "> GRADIENT OK", "lr: 0.00001", "> CHECKPOINT", "saving weights...", "> RESUMED"],
-  ["> SCRAPER_9X", "queue: 4,821 urls", "processed: 3,204", "> RATE: 142/s", "errors: 0", "> PROXY POOL", "active: 24/30", "> CONTINUING"],
-  ["> CODEGEN_AI", "context: 128k", "> WRITING...", "fn: parseMatrix()", "lines: 847", "> LINT: CLEAN", "tests: 12/12", "> COMMITTING"],
-  ["> MONITOR_SYS", "cpu: 34%  mem: 61%", "disk: 2.1TB free", "> ALL NODES UP", "latency: 4ms", "> UPTIME: 99.9%", "alerts: 0", "> NOMINAL"],
-];
+
 
 // ─── Utility: build monitor positions ─────────────────────────────────────────
 
@@ -156,49 +150,11 @@ function buildPositions(): MonitorPosition[] {
   return pos;
 }
 
-// ─── Utility: build a canvas texture for a given agent type (commented out)
-
-function buildScreenTexture(agentIndex: number): THREE.CanvasTexture {
-  const w = 256, h = 180;
-  const cv = document.createElement("canvas");
-  cv.width = w; cv.height = h;
-  const ctx = cv.getContext("2d")!;
-
-  // Background: deep phosphor green-black
-  ctx.fillStyle = "#020f02";
-  ctx.fillRect(0, 0, w, h);
-
-  // Scanline overlay
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 2);
-
-  // Text
-  const lines = AGENT_LINES[agentIndex % AGENT_LINES.length];
-  ctx.font = "bold 13px monospace";
-  lines.forEach((line, i) => {
-    const brightness = i === 0 ? "#00ff41" : i % 3 === 0 ? "#00cc33" : "#009922";
-    ctx.fillStyle = brightness;
-    ctx.fillText(line, 10, 18 + i * 20);
-  });
-
-  // Subtle vignette
-  const grad = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.9);
-  grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(1, "rgba(0,0,0,0.55)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
-
-  return new THREE.CanvasTexture(cv);
-}
-
-// ─── Camera animation controller ─────────────────────────────────────────────
-
 interface CameraRigProps {
   targetPos: THREE.Vector3 | null;
   targetLookAt: THREE.Vector3 | null;
   onArrived: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  orbitRef: React.MutableRefObject<any>;
+  orbitRef: React.MutableRefObject<OrbitControlsImpl | null>;
 }
 
 function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigProps) {
@@ -276,8 +232,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   const handleClick = useCallback(
-    (e: unknown) => {
-      const event = e as { stopPropagation: () => void; instanceId?: number };
+    (event: ThreeEvent<MouseEvent>) => {
       event.stopPropagation();
       const id = event.instanceId;
       if (id == null) return;
@@ -359,14 +314,12 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
         args={[hitGeo, hitMat, positions.length]}
         frustumCulled={false}
         onClick={handleClick}
-        onPointerOver={(e: unknown) => {
-          const event = e as { stopPropagation: () => void; instanceId?: number };
+        onPointerOver={(event: ThreeEvent<PointerEvent>) => {
           event.stopPropagation();
           document.body.style.cursor = "pointer";
           if (event.instanceId !== undefined) setHoveredId(event.instanceId);
         }}
-        onPointerOut={(e: unknown) => {
-          const event = e as { stopPropagation: () => void };
+        onPointerOut={(event: ThreeEvent<PointerEvent>) => {
           event.stopPropagation();
           document.body.style.cursor = "auto";
           setHoveredId(null);

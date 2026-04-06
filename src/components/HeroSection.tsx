@@ -9,67 +9,6 @@ interface HeroSectionProps {
   tagline: string;
 }
 
-function TerminalBlock() {
-  const lines = [
-    { prefix: "~", cmd: "whoami", delay: 0 },
-    { prefix: "", cmd: "allen — security researcher / full-stack engineer", delay: 600 },
-    { prefix: "~", cmd: "cat skills.log", delay: 1200 },
-    { prefix: "", cmd: "React · Node · Go · Python · AWS · Metasploit · Ghidra · Frida", delay: 1800 },
-    { prefix: "~", cmd: "cat journey.log", delay: 2400 },
-    { prefix: "", cmd: "hardware modder → reverse engineer → security researcher → full-stack architect", delay: 3000 },
-    { prefix: "~", cmd: "uptime", delay: 3600 },
-    { prefix: "", cmd: "10+ years building, breaking, and securing systems since 2014", delay: 4200 },
-  ];
-
-  const [visibleLines, setVisibleLines] = useState(0);
-
-  useEffect(() => {
-    const timers = lines.map((_, i) =>
-      setTimeout(() => setVisibleLines(i + 1), lines[i].delay)
-    );
-    return () => timers.forEach(clearTimeout);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="relative font-mono text-sm">
-      <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-green-500/20 via-green-500/5 to-transparent" />
-      <div className="relative rounded-2xl border border-white/10 bg-black/80 overflow-hidden">
-        {/* Title bar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          <span className="text-white/30 text-xs ml-2">allen@matrix — zsh</span>
-        </div>
-        {/* Body */}
-        <div className="p-5 space-y-1 min-h-[180px]">
-          {lines.slice(0, visibleLines).map((line, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className={line.prefix ? "text-white/80" : "text-green-400/70 pl-4"}
-            >
-              {line.prefix && (
-                <span className="text-green-400 mr-2">
-                  <span className="text-cyan-400">{">"}</span> {line.prefix}
-                </span>
-              )}
-              {line.cmd}
-            </motion.div>
-          ))}
-          {visibleLines < lines.length && (
-            <span className="inline-block w-2.5 h-5 bg-green-400 animate-pulse" />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FloatingCodeSnippet({ code, x, y, delay }: { code: string; x: string; y: string; delay: number }) {
   return (

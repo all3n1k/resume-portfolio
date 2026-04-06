@@ -12,7 +12,7 @@ export default function ArchitectModel(props: React.ComponentProps<"group">) {
 
   // Clone the scene so we can mutate it safely
   const clone = useMemo(() => SkeletonUtils.clone(fbx), [fbx]);
-  const { nodes, materials } = useGraph(clone);
+  useGraph(clone);
 
   useEffect(() => {
     // Just ensure the mesh receives/casts shadows
