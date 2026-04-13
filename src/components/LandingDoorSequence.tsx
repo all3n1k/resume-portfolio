@@ -211,14 +211,15 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
 
   return (
     <>
+      {/* Audio always mounted so ref is attached before effect fires */}
+      <audio ref={audioRef} src="/audio/synthwave.mp3" loop className="hidden" />
+
       {showTransition && (
         <MatrixRain onMidpoint={handleMidpoint} onComplete={handleComplete} />
       )}
 
       {entered ? (
         <div className="relative">
-          {/* Ambient Music — volume fades in smoothly via useEffect ramp above */}
-          <audio ref={audioRef} src="/audio/synthwave.mp3" loop className="hidden" />
 
           <MatrixCanvas opacity={0.25} density={0.03} speed={40} mouseTrail={true} />
           <button
