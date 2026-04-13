@@ -201,8 +201,8 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     const start = performance.now();
     let raf: number;
     const ramp = (now: number) => {
-      const t = Math.min((now - start) / DURATION, 1);
-      audio.volume = t * TARGET;
+      const t = Math.min(Math.max((now - start) / DURATION, 0), 1);
+      audio.volume = Math.min(Math.max(t * TARGET, 0), 1);
       if (t < 1) raf = requestAnimationFrame(ramp);
     };
     raf = requestAnimationFrame(ramp);
