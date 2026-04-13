@@ -190,7 +190,7 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
 
       {entered ? (
         <div className="relative">
-          <MatrixCanvas opacity={0.08} density={0.03} speed={40} mouseTrail={true} />
+          <MatrixCanvas opacity={0.25} density={0.03} speed={40} mouseTrail={true} />
           <button
             onClick={handleBack}
             style={{
