@@ -3,9 +3,21 @@
 import { Github, Linkedin, MonitorPlay, TerminalSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function TopNav() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  function handleContactClick(e: React.MouseEvent) {
+    e.preventDefault();
+    if (pathname === "/") {
+      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      router.push("/#contact");
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => {
@@ -46,20 +58,33 @@ export default function TopNav() {
 
         {/* Links List */}
         <div className="flex flex-row">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="group relative flex items-center gap-2.5 px-5 border-r border-green-500/10 last:border-r-0 hover:bg-green-500/[0.08] transition-colors"
-            >
-              <link.icon className="w-3.5 h-3.5 text-green-500/40 group-hover:text-green-400 transition-colors" />
-              <span className="text-xs font-mono text-green-500/60 group-hover:text-green-400 tracking-wider">
-                {link.name}
-              </span>
-              {/* Green active blip indicator - bottom span */}
-              <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.name === "SYS_CONTACT" ? (
+              <button
+                key={link.name}
+                onClick={handleContactClick}
+                className="group relative flex items-center gap-2.5 px-5 border-r border-green-500/10 last:border-r-0 hover:bg-green-500/[0.08] transition-colors h-full"
+              >
+                <link.icon className="w-3.5 h-3.5 text-green-500/40 group-hover:text-green-400 transition-colors" />
+                <span className="text-xs font-mono text-green-500/60 group-hover:text-green-400 tracking-wider">
+                  {link.name}
+                </span>
+                <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ) : (
+              <a
+                key={link.name}
+                href={link.href}
+                className="group relative flex items-center gap-2.5 px-5 border-r border-green-500/10 last:border-r-0 hover:bg-green-500/[0.08] transition-colors"
+              >
+                <link.icon className="w-3.5 h-3.5 text-green-500/40 group-hover:text-green-400 transition-colors" />
+                <span className="text-xs font-mono text-green-500/60 group-hover:text-green-400 tracking-wider">
+                  {link.name}
+                </span>
+                <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            )
+          )}
         </div>
       </div>
     </motion.div>
