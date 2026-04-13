@@ -26,13 +26,13 @@ function StaticNeoModel(props: React.ComponentProps<'group'>) {
         const mesh = child as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        if (mesh.material) {
-           if (Array.isArray(mesh.material)) {
-               mesh.material.forEach((mat) => mat.side = THREE.DoubleSide);
-           } else {
-               mesh.material.side = THREE.DoubleSide;
-           }
+        
+        // Recalculate normals to fix any broken FBX smoothing groups
+        if (mesh.geometry) {
+          mesh.geometry.computeVertexNormals();
         }
+
+        // Leave material side at default (FrontSide) to prevent inner-shell z-fighting lines on coats/sleeves
       }
     });
   }, [clone]);

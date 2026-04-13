@@ -73,7 +73,7 @@ interface ArchitectSceneProps {
 const RADIUS = 14;
 // Increased packing density since cases are now narrower
 const ITEMS_PER_ROW = 85;
-const ROWS = 18;
+const ROWS = 20;
 const COUNT_LIMIT = 1200;
 // Sphere centred at the camera [0, SPHERE_Y, 0] — every monitor is exactly RADIUS away
 // so they all appear the same physical size regardless of latitude
@@ -88,7 +88,7 @@ export const ARCHITECT_CONFIG = {
   // Camera sits at the center of the monitor dome
   cameraHome: new THREE.Vector3(0, 1.6, 0),
   cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
-  cameraLerpSpeed: 0.04,
+  cameraLerpSpeed: 0.018,
 
   // Neo on the LEFT side, angled slightly right toward Architect
   // [X (left/right), Y (up/down), Z (forward/back)]
@@ -132,8 +132,8 @@ function buildPositions(): MonitorPosition[] {
       const y = rowY;
       const z = -Math.cos(angle) * rowRadius;
 
-      // Cut exactly around the new shorter door
-      const isDoorGap = Math.abs(x) < 1.25 && y < 4.35 && z < 0;
+      // Cut exactly around the new taller door
+      const isDoorGap = Math.abs(x) < 1.25 && y < 4.8 && z < 0;
 
       if (isVisible && !isDoorGap && pos.length < COUNT_LIMIT) {
         pos.push({
@@ -368,7 +368,7 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
       const mat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
       return { mat, vid, ctx, tex };
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const screenMats = useMemo(() => screenData.map((d) => d.mat), [screenData]);
@@ -379,7 +379,7 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
 
     screenData.forEach(({ vid, ctx, tex }) => {
       if (!vid || !ctx || !tex) return;
-      vid.play().catch(() => {});
+      vid.play().catch(() => { });
 
       let lastDraw = 0;
       const drawLoop = (now: number) => {
@@ -525,6 +525,7 @@ interface DoorProps {
 function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
   const innerRef = useRef<THREE.Group>(null);
   const leafRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // Subtle float toward viewer on hover relative to inner group
@@ -543,8 +544,20 @@ function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
       leafRef.current.rotation.y = THREE.MathUtils.lerp(
         leafRef.current.rotation.y,
         targetRotation,
-        4 * delta
+        0.8 * delta
       );
+
+      if (lightRef.current) {
+        // Calculate door swing ratio (0.0 to 1.0)
+        const openRatio = Math.max(0, Math.min(1, leafRef.current.rotation.y / 1.6));
+        
+        // Intensity ramps on a heavy exponential curve so it doesn't flash instantly
+        lightRef.current.intensity = Math.pow(openRatio, 4) * 4000;
+        
+        // The distance parameter controls the absolute boundary sphere of the light.
+        // Expanding it dynamically simulates the light physically creeping across the floor and washing over shapes "like water".
+        lightRef.current.distance = 1.0 + Math.pow(openRatio, 2) * 30;
+      }
     }
   });
 
@@ -591,18 +604,18 @@ function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
           The group sits at world Y = 1.6, so the floor is at local Y = -1.6.
         */}
         {(() => {
-          // Mathematically grounded to span exactly from world Y=0 to Y=4.35 gap
+          // Mathematically grounded to span exactly from world Y=0 to Y=4.8 gap
           const floorY = -1.6;
-          const doorHeight = 4.2;
+          const doorHeight = 4.57;
           const doorWidth = 1.9;
 
           // Outer frame (Architrave)
-          const frameThick = 0.45;
+          const frameThick = 0.15;
           const frameDepth = 0.26;
           const frameH = doorHeight + frameThick;
 
           // Door leaf
-          const leafDepth = 0.12;
+          const leafDepth = 0.005;
           const leafH = doorHeight;
           const leafCenterY = floorY + leafH / 2;
 
@@ -627,6 +640,22 @@ function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
                 <boxGeometry args={[doorWidth + frameThick * 2 + 0.1, frameThick, frameDepth + 0.04]} />
                 <primitive object={frameMat} attach="material" />
               </mesh>
+
+              {/* The Matrix "Source" Void behind the door */}
+              <mesh position={[0, leafCenterY, -0.15]}>
+                <planeGeometry args={[doorWidth + 0.2, leafH + 0.2]} />
+                <meshBasicMaterial color="#ffffff" toneMapped={false} />
+              </mesh>
+
+              {/* Blinding Point Light linked to the door opening */}
+              <pointLight 
+                ref={lightRef} 
+                position={[0, leafCenterY, -0.10]} 
+                color="#ffffff" 
+                intensity={0} 
+                distance={1.0} 
+                decay={1.5} 
+              />
 
               {/* Pivot Hinge Group for swinging the door leaf */}
               <group ref={leafRef} position={[doorWidth / 2, 0, 0]}>
@@ -937,6 +966,13 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const [isDoorApproach, setIsDoorApproach] = useState(false);
   const pendingDoorCallback = useRef<(() => void) | null>(null);
 
+  // Fade in control for initial mount
+  const [sceneOpacity, setSceneOpacity] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setSceneOpacity(1), 50);
+    return () => clearTimeout(t);
+  }, []);
+
   // Get video src for the fullscreen overlay — swap _sm transcodes back to original full-res
   const getVideoSrc = useCallback(
     (instanceId: number): string => {
@@ -992,7 +1028,16 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   }, []);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", background: "#111" }}>
+    <div 
+      style={{ 
+        position: "relative", 
+        width: "100%", 
+        height: "100vh", 
+        background: "#000", 
+        opacity: sceneOpacity, 
+        transition: "opacity 3s ease-in-out" 
+      }}
+    >
       <Canvas
         shadows
         dpr={[1, 2]}

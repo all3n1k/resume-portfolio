@@ -41,11 +41,17 @@ const achievements = [
 export default function Home() {
   return (
     <>
-      {/* Unobstructive, massive centered floating text overlay */}
-      <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold mix-blend-screen">
+      {/* Massive centered floating text overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold"
+        style={{ fontFamily: "'OCR A Std', 'OCR-A', 'OCR A Extended', monospace" }}
+      >
         <MouseGlitchText 
-          text="ALLEN" 
-          className="text-[12vw] md:text-[8rem] tracking-[0.3em] font-black mix-blend-screen" 
+          text="Hello" 
+          baseColor="black"
+          outlineColor="#00ff41"
+          outlineWidth="4px"
+          className="text-[12vw] md:text-[8rem] tracking-[0.15em] font-black drop-shadow-[0_0_15px_rgba(0,255,65,0.4)]" 
           glitchRadius={180}
           autoDissolveDelay={5000}
         />

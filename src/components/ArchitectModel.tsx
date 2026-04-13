@@ -15,20 +15,19 @@ export default function ArchitectModel(props: React.ComponentProps<"group">) {
   useGraph(clone);
 
   useEffect(() => {
-    // Just ensure the mesh receives/casts shadows
+    // Just ensure the mesh receives/casts shadows and has cleaned normals
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         
-        if (mesh.material) {
-           if (Array.isArray(mesh.material)) {
-               mesh.material.forEach((mat) => mat.side = THREE.DoubleSide);
-           } else {
-               mesh.material.side = THREE.DoubleSide;
-           }
+        // Compute normals to discard broken smoothing groups (fixes vertical lines/stripes)
+        if (mesh.geometry) {
+          mesh.geometry.computeVertexNormals();
         }
+
+        // Leave material side to default (FrontSide). DoubleSide on full character rigs causes internal shell bleeding
       }
     });
   }, [clone]);

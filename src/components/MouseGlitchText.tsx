@@ -16,8 +16,11 @@ export default function MouseGlitchText({
   text, 
   className = "", 
   glitchRadius = 150,
-  autoDissolveDelay = 4000
-}: MouseGlitchTextProps) {
+  autoDissolveDelay = 4000,
+  baseColor = "rgba(255, 255, 255, 0.6)",
+  outlineColor = "transparent",
+  outlineWidth = "0px"
+}: MouseGlitchTextProps & { baseColor?: string; outlineColor?: string; outlineWidth?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = React.useState(false);
   
@@ -85,7 +88,7 @@ export default function MouseGlitchText({
           span.style.transform = `scale(${1 + intensity * 0.1})`;
         } else {
           span.innerText = charArray[i];
-          span.style.color = "rgba(255, 255, 255, 0.6)";
+          span.style.color = baseColor;
           span.style.textShadow = "none";
           span.style.transform = "scale(1)";
         }
@@ -121,7 +124,9 @@ export default function MouseGlitchText({
             width: "1ch", 
             textAlign: "center", 
             display: "inline-block",
-            transition: "color 0.1s ease-out, transform 0.1s ease-out" 
+            transition: "color 0.1s ease-out, transform 0.1s ease-out",
+            WebkitTextStroke: `${outlineWidth} ${outlineColor}`,
+            paintOrder: "stroke fill"
           }}
         >
           {char === " " ? "\u00A0" : char}
