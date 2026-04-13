@@ -158,9 +158,9 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               <img 
                 src="/allen-portrait.png" 
                 alt="Allen - Security Researcher & Full-Stack Engineer"
-                className="relative z-10 w-full h-auto object-contain drop-shadow-2xl"
+                className="relative z-10 w-full h-auto object-contain transition-all duration-700"
                 style={{ 
-                  filter: "contrast(1.08) saturate(0.9)",
+                  filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 20px 40px rgba(0,0,0,0.8)) drop-shadow(0px 0px 15px rgba(0,255,65,0.12))",
                   maxHeight: "75vh",
                 }}
               />
