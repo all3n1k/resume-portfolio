@@ -824,6 +824,7 @@ interface SceneProps {
   onDoorClick: () => void;
   videoPaths: string[];
   isDevActive?: boolean;
+  isActiveScreen: boolean;
 }
 
 function Scene({
@@ -837,6 +838,7 @@ function Scene({
   onDoorClick,
   videoPaths,
   isDevActive,
+  isActiveScreen,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -943,12 +945,12 @@ function Scene({
         enableZoom={!!isDevActive}
         enableDamping
         dampingFactor={0.08}
-        // Tighten vertical (Y) movement to hide extreme ceiling/floor, unless in dev mode
-        maxPolarAngle={isDevActive ? Math.PI : Math.PI / 2 + 0.05}
-        minPolarAngle={isDevActive ? 0 : Math.PI / 2.2}
-        // Tighten horizontal (X) to 80 degrees total, unless in dev mode
-        minAzimuthAngle={isDevActive ? -Infinity : -40 * (Math.PI / 180)}
-        maxAzimuthAngle={isDevActive ? Infinity : 40 * (Math.PI / 180)}
+        // Tighten vertical (Y) movement to hide extreme ceiling/floor, unless in dev mode or in transition
+        maxPolarAngle={isDevActive || cameraTarget !== null || isActiveScreen ? Math.PI : Math.PI / 2 + 0.05}
+        minPolarAngle={isDevActive || cameraTarget !== null || isActiveScreen ? 0 : Math.PI / 2.2}
+        // Tighten horizontal (X) to 80 degrees total, unless in dev mode or transitioning out of bounds
+        minAzimuthAngle={isDevActive || cameraTarget !== null || isActiveScreen ? -Infinity : -40 * (Math.PI / 180)}
+        maxAzimuthAngle={isDevActive || cameraTarget !== null || isActiveScreen ? Infinity : 40 * (Math.PI / 180)}
         rotateSpeed={0.45}
       />
     </>
@@ -1066,6 +1068,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           onDoorClick={handleDoorClick}
           videoPaths={videoPaths}
           isDevActive={isDevActive}
+          isActiveScreen={!!activeScreen}
         />
         <DevInspectorRaycaster />
       </Canvas>
