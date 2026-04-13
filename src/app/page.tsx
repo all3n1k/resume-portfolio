@@ -62,7 +62,7 @@ export default function Home() {
 
       <LandingDoorSequence>
         <EasterEggManager>
-          <main className="relative z-10 min-h-screen bg-black">
+          <main className="relative z-10 min-h-screen">
             {/* Global IDE Architectural Grid */}
             <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.2]" 
               style={{ 

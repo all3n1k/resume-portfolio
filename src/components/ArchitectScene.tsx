@@ -620,7 +620,7 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
 
           // Door leaf
           const leafDepth = 0.005;
-          const leafH = doorHeight;
+          const leafH = doorHeight - 0.035; // Shrink slightly to clear the top lintel threshold when swinging
           const leafCenterY = floorY + leafH / 2;
 
           // Doorknob (standard waist height)
