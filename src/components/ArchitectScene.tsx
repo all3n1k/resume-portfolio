@@ -155,9 +155,10 @@ interface CameraRigProps {
   targetLookAt: THREE.Vector3 | null;
   onArrived: () => void;
   orbitRef: React.MutableRefObject<OrbitControlsImpl | null>;
+  isDoorApproach: boolean;
 }
 
-function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigProps) {
+function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef, isDoorApproach }: CameraRigProps) {
   const { camera } = useThree();
   const arrived = useRef(false);
 
@@ -166,11 +167,13 @@ function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigPr
   useFrame(() => {
     if (!targetPos || !targetLookAt || !orbitRef.current) return;
 
+    const currentSpeed = isDoorApproach ? 0.01 : ARCHITECT_CONFIG.cameraLerpSpeed;
+
     // Lerp position
-    camera.position.lerp(targetPos, ARCHITECT_CONFIG.cameraLerpSpeed);
+    camera.position.lerp(targetPos, currentSpeed);
 
     // Lerp OrbitControls target (which dictates where camera looks)
-    orbitRef.current.target.lerp(targetLookAt, ARCHITECT_CONFIG.cameraLerpSpeed);
+    orbitRef.current.target.lerp(targetLookAt, currentSpeed);
     orbitRef.current.update();
 
     const posDist = camera.position.distanceTo(targetPos);
@@ -821,6 +824,7 @@ interface SceneProps {
   onDoorClick: () => void;
   videoPaths: string[];
   isActiveScreen: boolean;
+  isDoorApproach: boolean;
 }
 
 function Scene({
@@ -834,6 +838,7 @@ function Scene({
   onDoorClick,
   videoPaths,
   isActiveScreen,
+  isDoorApproach,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -868,6 +873,7 @@ function Scene({
         targetLookAt={cameraLookAt}
         orbitRef={orbitRef}
         onArrived={onCameraArrived}
+        isDoorApproach={isDoorApproach}
       />
 
       {/* Lighting - Subtly graded with a faintly noticeable Matrix green tint */}
@@ -1062,6 +1068,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           onDoorClick={handleDoorClick}
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
+          isDoorApproach={isDoorApproach}
         />
       </Canvas>
 
