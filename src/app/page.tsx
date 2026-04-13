@@ -96,6 +96,9 @@ export default function Home() {
               {/* Contact Zone — Deep footer area */}
               <FloatingCodeSnippet code={"msfvenom -p linux/x64/shell_reverse_tcp"} x="1%" y="350vh" delay={2.0} duration={4.4} />
               <FloatingCodeSnippet code={"docker build -t classifier:latest ."} x="79%" y="360vh" delay={2.9} duration={5.1} />
+              <FloatingCodeSnippet code={"terraform apply -auto-approve"} x="8%" y="380vh" delay={1.5} duration={6.2} />
+              <FloatingCodeSnippet code={"tcpdump -i eth0 port 80 -w traffic.pcap"} x="75%" y="400vh" delay={3.8} duration={4.8} />
+              <FloatingCodeSnippet code={"MATCH (u:User)-[r:FRIEND]->(f:User) RETURN u"} x="2%" y="420vh" delay={2.1} duration={5.7} />
             </div>
 
             <HeroSection

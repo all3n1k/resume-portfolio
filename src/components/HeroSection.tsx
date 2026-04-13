@@ -57,6 +57,9 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
       {/* Bottom Right Quadrant */}
       <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="84%" y="82%" delay={2.5} duration={4.0} />
       <FloatingCodeSnippet code={"sudo systemctl restart tailscaled"} x="72%" y="92%" delay={2.7} duration={5.2} />
+      <FloatingCodeSnippet code={"aircrack-ng -w wordlist.txt capture.cap"} x="88%" y="15%" delay={3.1} duration={4.5} />
+      <FloatingCodeSnippet code={"hashcat -m 0 hash.txt dict.txt"} x="5%" y="65%" delay={1.2} duration={5.5} />
+      <FloatingCodeSnippet code={"ssh-keygen -t ed25519 -C 'allen@secure'"} x="12%" y="45%" delay={1.8} duration={4.8} />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">
