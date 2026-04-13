@@ -30,25 +30,7 @@ Run the command prompt in the root of the repo directory to install all dependen
 npm install
 ```
 
-### 2. Environment Variables 
-For the contact system and live chat to function, you must construct an `.env.local` file at the root.
-
-Create a `.env.local`:
-```
-# Email (Nodemailer)
-GMAIL_USER=your-email@gmail.com
-GMAIL_APP_PASSWORD=abcdefghijklmnop
-
-# Persistence (Upstash Redis)
-UPSTASH_REDIS_REST_URL=https://your-url.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-token-here
-
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=123456789:ABCDef...
-TELEGRAM_CHAT_ID=987654321
-```
-
-*(Note: For Gmail, you must generate a 16-character **App Password** from your Google Account Security settings. For Telegram, message @BotFather to create a bot and get a token.)*
+### 2. Environment Setup kept hidden for security reasons.
 
 ### 3. Startup 
 Run your local testing server: 
