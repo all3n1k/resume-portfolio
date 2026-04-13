@@ -146,8 +146,16 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
           {/* Right — Portrait */}
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.0, delay: 0.3 }}
+            animate={{ 
+              opacity: 1, 
+              y: [0, -12, 0], // Floating animation
+              scale: 1 
+            }}
+            transition={{ 
+              opacity: { duration: 1.0, delay: 0.3 },
+              y: { duration: 5, repeat: Infinity, ease: "easeInOut" }, // Infinite drift
+              scale: { duration: 1.0, delay: 0.3 }
+            }}
             className="relative flex items-end justify-center"
           >
             {/* Ambient glow removed for structural UI style */}
@@ -160,7 +168,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
                 alt="Allen - Security Researcher & Full-Stack Engineer"
                 className="relative z-10 w-full h-auto object-contain transition-all duration-700"
                 style={{ 
-                  filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 20px 40px rgba(0,0,0,0.8)) drop-shadow(0px 0px 15px rgba(0,255,65,0.12))",
+                  filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 20px 50px rgba(0,0,0,0.9)) drop-shadow(0px 0px 20px rgba(0,255,65,0.25))",
                   maxHeight: "75vh",
                 }}
               />

@@ -7,7 +7,7 @@ import { Github, Linkedin, Mail, ArrowUpRight } from "lucide-react";
 const SOCIAL_LINKS = [
   { icon: Github, href: "https://github.com/all3n1k", label: "GitHub", handle: "github.com/all3n1k" },
   { icon: Linkedin, href: "https://www.linkedin.com/in/allen-niktalov/", label: "LinkedIn", handle: "in/allen-niktalov" },
-  { icon: Mail, href: "mailto:allenniktalov@gmail.com", label: "Email", handle: "allenniktalov@gmail.com" },
+  { icon: Mail, href: "#contact", label: "Email", handle: "allenniktalov@gmail.com" },
 ];
 
 function LiveClock() {
@@ -156,7 +156,7 @@ export default function ModernContact() {
             viewport={{ once: true }}
             className="md:col-span-2 relative group"
           >
-            <div className="relative p-8 rounded-none border border-white/20 bg-black">
+            <div className="relative p-8 rounded-none border border-white/20 bg-black shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
                 <div className="w-2 h-4 bg-green-400 animate-pulse" />
                 <span className="text-xs font-mono text-white/40 uppercase tracking-widest">Execute POST /message</span>
@@ -264,7 +264,7 @@ export default function ModernContact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="p-6 rounded-none border border-white/20 bg-black"
+              className="p-6 rounded-none border border-white/20 bg-black shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(0,255,65,0.05)] transition-shadow duration-500"
             >
               <span className="text-xs font-mono text-white/30 uppercase tracking-widest border-b border-white/10 pb-2 block mb-4">Endpoints</span>
               <div className="space-y-0 text-sm font-mono">
