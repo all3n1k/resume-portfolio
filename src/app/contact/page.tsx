@@ -65,7 +65,6 @@ export default function TerminalContact() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [senderName, setSenderName] = useState("");
   const [isTransmitting, setIsTransmitting] = useState(false);
-  const [cursorVisible, setCursorVisible] = useState(true);
   const idCounter = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,12 +75,6 @@ export default function TerminalContact() {
 
   const addLine = useCallback((text: string, type: TerminalLine["type"], typed = false) => {
     setLines((prev) => [...prev, { id: nextId(), text, type, typed }]);
-  }, []);
-
-  // Blink cursor
-  useEffect(() => {
-    const iv = setInterval(() => setCursorVisible((v) => !v), 500);
-    return () => clearInterval(iv);
   }, []);
 
   // Auto-scroll

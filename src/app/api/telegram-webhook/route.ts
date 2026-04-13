@@ -12,7 +12,6 @@ interface SessionMessage {
 
 // Shared via Next.js module cache within the same process
 declare global {
-  // eslint-disable-next-line no-var
   var __terminalSessions: Map<string, SessionMessage[]> | undefined;
 }
 const sessions: Map<string, SessionMessage[]> =
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Expect Allen to reply in format: [SESSION_ID] reply text here
     // e.g., "[a3f2b1c4] Hey, thanks for reaching out!"
-    const match = text.match(/^\[([a-f0-9\-]{8,36})\]\s+(.+)$/s);
+    const match = text.match(/^\[([a-f0-9-]{8,36})\]\s+([\s\S]+)$/);
     if (!match) {
       // Not a session reply — ignore or send back usage hint
       return new Response("OK", { status: 200 });

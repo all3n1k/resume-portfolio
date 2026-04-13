@@ -3,12 +3,11 @@
 import { Github, Linkedin, MonitorPlay, TerminalSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function TopNav() {
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   function handleContactClick(e: React.MouseEvent) {
     e.preventDefault();
