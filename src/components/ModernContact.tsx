@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Github, Linkedin, Mail, ArrowUpRight } from "lucide-react";
-import createGlobe from "cobe";
 
 const SOCIAL_LINKS = [
   { icon: Github, href: "https://github.com/all3n1k", label: "GitHub", handle: "github.com/all3n1k" },

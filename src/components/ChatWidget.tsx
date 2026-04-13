@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, X } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface ChatMessage {
   role: "user" | "assistant";

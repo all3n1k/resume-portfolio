@@ -75,7 +75,7 @@ export default function ModernAchievements({
         >
           <div className="flex items-center gap-3 mb-4">
             <span className="text-green-400 text-sm font-mono tracking-widest uppercase">
-              // EXPERIMENTAL_DATA
+              {"//"} EXPERIMENTAL_DATA
             </span>
           </div>
           <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter uppercase">
