@@ -10,7 +10,7 @@ interface HeroSectionProps {
 }
 
 
-function FloatingCodeSnippet({ code, x, y, delay, duration = 4 }: { code: string; x: string; y: string; delay: number; duration?: number }) {
+export function FloatingCodeSnippet({ code, x, y, delay, duration = 4 }: { code: string; x: string; y: string; delay: number; duration?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8, y: 0 }}
@@ -38,7 +38,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
   if (!mounted) return null;
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center">
       {/* Removed soft radial glow and local grid for structural UI style */}
 
       {/* Floating code snippets — scattered organically across the margins */}
@@ -187,8 +187,9 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+      {/* Unified Crossover Fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black to-transparent pointer-events-none z-0" />
+      <div className="absolute -bottom-40 left-0 right-0 h-40 bg-gradient-to-b from-black to-transparent pointer-events-none z-0" />
 
       {/* Scroll indicator */}
       <motion.div

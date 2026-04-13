@@ -619,7 +619,7 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
           const frameH = doorHeight + frameThick;
 
           // Door leaf
-          const leafDepth = 0.005;
+          const leafDepth = 0.045; // Substantially increased depth to prevent geometric clipping
           const leafH = doorHeight - 0.035; // Shrink slightly to clear the top lintel threshold when swinging
           const leafCenterY = floorY + leafH / 2;
 
@@ -672,11 +672,9 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
                 {/* High-Fidelity Doorknob Assembly shifted relative to hinge */}
                 <group position={[knobX - doorWidth / 2, knobY, leafDepth / 2 + 0.005]}>
                   {/* Hardware Rose (Circular Backplate) */}
-                  <mesh position={[0, 0, 0]}>
-                    {/* Made the rose backing physically larger */}
+                  <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
                     <cylinderGeometry args={[0.075, 0.075, 0.015, 32]} />
                     <meshStandardMaterial color="#666666" metalness={0.9} roughness={0.4} />
-                    <group rotation={[Math.PI / 2, 0, 0]}></group>
                   </mesh>
 
                   {/* Knob Stem */}
@@ -690,12 +688,10 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
                   <mesh position={[0, 0, 0.09]}>
                     {/* Significantly oversized sphere to stand out heavily on the screen */}
                     <sphereGeometry args={[0.085, 64, 64]} />
-                    <meshPhysicalMaterial
-                      color="#ffffff"
-                      metalness={1.0}
-                      roughness={0.05}
-                      clearcoat={1.0}
-                      clearcoatRoughness={0.1}
+                    <meshStandardMaterial
+                      color="#cccccc"
+                      metalness={0.8}
+                      roughness={0.3}
                     />
                   </mesh>
 
