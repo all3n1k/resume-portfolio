@@ -61,7 +61,7 @@ export default function TerminalContact() {
   const router = useRouter();
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
-  const [phase, setPhase] = useState<"booting" | "name" | "chat">("booting");
+  const [phase, setPhase] = useState<"booting" | "name" | "chat" | "terminated">("booting");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [senderName, setSenderName] = useState("");
   const [isTransmitting, setIsTransmitting] = useState(false);
@@ -136,6 +136,19 @@ export default function TerminalContact() {
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
+  const handleTerminate = useCallback(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    __sessionId = null;
+    __sessionName = null;
+    setPhase("terminated");
+    addLine("", "blank");
+    addLine("SESSION TERMINATED BY USER", "system", true);
+    addLine("────────────────────────────────────────────────────────────", "system", true);
+    addLine("CLOSING SECURE CHANNEL...", "system", true);
+    addLine("GOODBYE.", "system", true);
+    setTimeout(() => router.push("/"), 2400);
+  }, [addLine, router]);
+
   const handleSubmit = async () => {
     if (!input.trim() || isTransmitting) return;
     const text = input.trim();
@@ -193,6 +206,7 @@ export default function TerminalContact() {
     if (e.key === "Enter") handleSubmit();
   };
 
+  const isInputActive = phase === "name" || phase === "chat";
   const promptPrefix = phase === "name" ? "NAME: " : "// ";
 
   return (
@@ -297,6 +311,40 @@ export default function TerminalContact() {
         ← EXIT
       </button>
 
+      {/* Terminate session — top-right, red, only in chat phase */}
+      {phase === "chat" && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleTerminate(); }}
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            zIndex: 20,
+            background: "transparent",
+            border: "1px solid rgba(255,40,40,0.25)",
+            color: "rgba(255,40,40,0.4)",
+            fontFamily: "inherit",
+            fontSize: "0.85em",
+            cursor: "pointer",
+            letterSpacing: "0.12em",
+            padding: "4px 14px",
+            transition: "color 0.2s, border-color 0.2s, text-shadow 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#ff2828";
+            e.currentTarget.style.borderColor = "rgba(255,40,40,0.6)";
+            e.currentTarget.style.textShadow = "0 0 8px rgba(255,40,40,0.8)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "rgba(255,40,40,0.4)";
+            e.currentTarget.style.borderColor = "rgba(255,40,40,0.25)";
+            e.currentTarget.style.textShadow = "none";
+          }}
+        >
+          TERMINATE SESSION
+        </button>
+      )}
+
       {/* Line log */}
       <div
         ref={containerRef}
@@ -314,7 +362,7 @@ export default function TerminalContact() {
         ))}
 
         {/* Live input line */}
-        {(phase === "name" || phase === "chat") && (
+        {isInputActive && (
           <div className="glow" style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
             <span style={{ opacity: 0.5 }}>{promptPrefix}</span>
             <span>{input}</span>
@@ -347,6 +395,7 @@ export default function TerminalContact() {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
+        disabled={!isInputActive}
         autoFocus
         autoComplete="off"
         spellCheck={false}
