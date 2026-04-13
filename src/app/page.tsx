@@ -45,7 +45,7 @@ export default function Home() {
       {/* Massive centered floating text overlay */}
       <div 
         className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold"
-        style={{ fontFamily: "'Nimbus Mono PS', monospace" }}
+        style={{ fontFamily: "'OCR A Std', 'OCR-A', 'OCR A Extended', monospace" }}
       >
         <MouseGlitchText 
           text="knock, knock, Allen." 

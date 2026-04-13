@@ -54,6 +54,7 @@ interface MonitorPosition {
 interface ActiveScreen {
   instanceId: number;
   worldPosition: THREE.Vector3;
+  lookAtPosition: THREE.Vector3;
   videoSrc: string;
 }
 
@@ -87,8 +88,8 @@ const PHI_END = 55;
 export const ARCHITECT_CONFIG = {
   // Camera sits at the center of the monitor dome
   cameraHome: new THREE.Vector3(0, 1.6, 0),
-  cameraLookAtHome: new THREE.Vector3(0, 1.6, -0.1), // looking straight ahead, very close pivot
-  cameraLerpSpeed: 0.018,
+  cameraLookAtHome: new THREE.Vector3(0, 1.6, -2), // looking straight ahead with a deep enough focal point to not snap FOV
+  cameraLerpSpeed: 0.05,
 
   // Neo on the LEFT side, angled slightly right toward Architect
   // [X (left/right), Y (up/down), Z (forward/back)]
@@ -173,7 +174,10 @@ function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef }: CameraRigPr
     orbitRef.current.target.lerp(targetLookAt, ARCHITECT_CONFIG.cameraLerpSpeed);
     orbitRef.current.update();
 
-    if (camera.position.distanceTo(targetPos) < 0.05 && !arrived.current) {
+    const posDist = camera.position.distanceTo(targetPos);
+    const lookDist = orbitRef.current.target.distanceTo(targetLookAt);
+
+    if (posDist < 0.05 && lookDist < 0.05 && !arrived.current) {
       arrived.current = true;
       camera.position.copy(targetPos);
       orbitRef.current.target.copy(targetLookAt);
@@ -987,7 +991,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
     (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => {
       if (isDevActive || isReturning || activeScreen) return;
       const src = getVideoSrc(instanceId);
-      setActiveScreen({ instanceId, worldPosition: worldPos, videoSrc: src });
+      setActiveScreen({ instanceId, worldPosition: worldPos, lookAtPosition: lookAtPos, videoSrc: src });
       setCameraTarget(worldPos);
       setCameraLookAtTarget(lookAtPos);
     },
@@ -1022,7 +1026,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const handleCloseVideo = useCallback(() => {
     setVideoVisible(false);
     setIsReturning(true);
-    // Animate camera back to home position
+    // Animate camera back to home position facing the door
     setCameraTarget(ARCHITECT_CONFIG.cameraHome.clone());
     setCameraLookAtTarget(ARCHITECT_CONFIG.cameraLookAtHome.clone());
   }, []);
