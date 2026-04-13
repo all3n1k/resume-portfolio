@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Terminal Resume Environment [0x01]
 
-## Getting Started
+> A brutalist, interactive 3D portfolio and professional workspace bridging the gap between web applications and immersive game rendering. Built to stand out and simulate a highly-secured hacker mainframe.
 
-First, run the development server:
+This project completely ditches standard scrolling web structures and places the recruiter inside a dense, 3D Matrix-inspired server room. You navigate freely via panning your viewport, diving deep into CRT monitors that cycle through high-performance dynamic video textures showcasing prior development work, all while seamlessly rendering professional endpoints like a secured NodeMailer email transmission pipeline.
 
+## ⚙️ Core Architecture Features
+
+- **Dynamic 3D Environment**: Entire landing environment is built inside a custom decoupled React-Three-Fiber WebGL `<Canvas>`. The physics constraints natively lock and unlock depending on user interaction, allowing smooth `.lerp()` sequence movements when approaching screens or exiting the grid.
+- **Micro-Memory Allocation**: Heavy 3D geometry is structurally culled behind the viewport and exclusively mapped using `<instancedMesh>` bindings to keep layout bounds strictly under control and prevent VRAM spikes. 
+- **Video Texture Pipelining**: WebGL Canvas texture mappers pull low-latency `HTMLVideoElement` feeds from hidden DOM elements natively wrapped inside `requestAnimationFrame` loops, allowing complex high-definition streaming directly onto curved 3D meshes without crashing low-end hardware.
+- **Secure Backend Transmission**: Bypasses the traditional "Mock Submit" systems. Features a hardened `Next.js 15` POST endpoint that parses `.env.local` level Gmail App Passwords remotely within the server framework, authenticating natively through NodeMailer to route form payloads from Vercel securely to your physical inbox.
+
+## 🛠️ Tech Stack 
+
+- **Framework**: `Next.js 15` (App Router Core)
+- **3D Engine**: `@react-three/fiber` & `three` (WebGL Engine)
+- **Geometry Wrappers**: `@react-three/drei` (OrbitControls, MeshReflector)
+- **Styling**: `TailwindCSS` (Brutalist monospace overlays)
+- **SMTP Engine**: `nodemailer` (Backend Contact Gateway)
+- **Deployment**: `Vercel` (Edge & Serverless Node.js infrastructure)
+
+## 📦 Setting up your Node.js Environment
+
+### 1. Installation 
+Run the command prompt in the root of the repo directory to install all dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables 
+For the Contact Form to successfully transmit server-routed emails, you must construct an `.env.local` file at the root. Do **NOT** upload this file to Git. 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local`:
+```
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=abcdefghijklmnop
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*(Note: Standard passwords will fail. You must navigate to your active Google Account -> SECUIRITY -> 2-Step Verification and generate a 16-character **App Password**. Make sure to remove any spaces if copying horizontally!)*
 
-## Learn More
+### 3. Startup 
+Run your local testing server: 
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Navigate to `http://localhost:3000` to interact with the environment sandbox. 
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Production Deployment Sequence
+Whenever you perform a code push to the main branch via Vercel GitHub hooking, remember you must inject the environment variables natively into the Vercel infrastructure. 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Launch your `Vercel` deploy dashboard.
+2. Under `Settings > Environment Variables`.
+3. Push `GMAIL_USER` and `GMAIL_APP_PASSWORD` respectively.
+4. Set the `GMAIL_APP_PASSWORD` variable as `[Sensitive]` to restrict UI visibility on the Vercel portal.
+5. Trigger a fresh deployment rollout.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Enjoy building inside the Grid!
