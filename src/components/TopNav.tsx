@@ -12,11 +12,7 @@ export default function TopNav() {
 
   function handleContactClick(e: React.MouseEvent) {
     e.preventDefault();
-    if (pathname === "/") {
-      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      router.push("/#contact");
-    }
+    router.push("/contact");
   }
 
   useEffect(() => {

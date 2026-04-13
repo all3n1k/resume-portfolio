@@ -207,7 +207,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   const caseGeo = useMemo(() => {
     // Manually create a rounded box via BufferGeometry subdivision trick
     // Width shrunk to 1.04 to mimic a 4:3 CRT casing
-    const geo = new THREE.BoxGeometry(1.04, 0.78, 1.18, 1, 1, 1);
+    const geo = new THREE.BoxGeometry(1.04, 0.78, 1.18, 2, 2, 2);
     return geo;
   }, []);
 
@@ -257,8 +257,8 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     [positions, onMonitorClick]
   );
 
-  // Invisible hit-box geometry for reliable raycasting & hover glow
-  const hitGeo = useMemo(() => new THREE.BoxGeometry(1.10, 0.85, 1.25), []);
+  // Hover glow uses a rounded plane (matching the screen curvature) instead of a flat box
+  const hitGeo = useMemo(() => createRoundedPlaneGeo(0.92, 0.70, 0.09), []);
   const hitMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
@@ -293,6 +293,7 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
     positions.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
       dummy.lookAt(0, p.lookAtY, 0);
+      dummy.translateZ(0.605); // sit just in front of the bezel, flush with screen plane
       dummy.updateMatrix();
       hitMeshRef.current!.setMatrixAt(i, dummy.matrix);
       hitMeshRef.current!.setColorAt(i, new THREE.Color(0x000000));
