@@ -10,16 +10,20 @@ interface HeroSectionProps {
 }
 
 
-function FloatingCodeSnippet({ code, x, y, delay }: { code: string; x: string; y: string; delay: number }) {
+function FloatingCodeSnippet({ code, x, y, delay, duration = 4 }: { code: string; x: string; y: string; delay: number; duration?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8, delay }}
+      initial={{ opacity: 0, scale: 0.8, y: 0 }}
+      animate={{ opacity: 1, scale: 1, y: [0, -15, 0] }}
+      transition={{ 
+        opacity: { duration: 0.8, delay },
+        scale: { duration: 0.8, delay },
+        y: { duration, repeat: Infinity, ease: "easeInOut", delay }
+      }}
       className="absolute hidden lg:block pointer-events-none select-none"
       style={{ left: x, top: y }}
     >
-      <div className="px-3 py-2 rounded-none bg-black border border-green-500/20 font-mono text-[11px] text-green-500/40 whitespace-pre shadow-[4px_4px_0_rgba(0,255,65,0.1)]">
+      <div className="px-3 py-2 rounded-none bg-black border border-green-500/20 font-mono text-[11px] text-green-500/40 whitespace-pre shadow-[4px_4px_0_rgba(0,255,65,0.1)] backdrop-blur-sm">
         {code}
       </div>
     </motion.div>
@@ -37,11 +41,22 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Removed soft radial glow and local grid for structural UI style */}
 
-      {/* Floating code snippets — positioned in far margins to avoid content overlap */}
-      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="1%" y="12%" delay={1.5} />
-      <FloatingCodeSnippet code={"def update_servo(yaw, pitch):"} x="82%" y="8%" delay={2.0} />
-      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="88%" y="78%" delay={2.5} />
-      <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="1%" y="82%" delay={1.8} />
+      {/* Floating code snippets — scattered organically across the margins */}
+      {/* Top Left Quadrant */}
+      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="2%" y="15%" delay={1.5} duration={4.2} />
+      <FloatingCodeSnippet code={"chmod +x deploy.sh"} x="8%" y="5%" delay={1.8} duration={3.8} />
+
+      {/* Bottom Left Quadrant */}
+      <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="3%" y="82%" delay={1.8} duration={5.1} />
+      <FloatingCodeSnippet code={"docker-compose up -d --build"} x="6%" y="92%" delay={2.1} duration={4.5} />
+
+      {/* Top Right Quadrant */}
+      <FloatingCodeSnippet code={"def update_servo(yaw, pitch):"} x="82%" y="8%" delay={2.0} duration={3.5} />
+      <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} />
+
+      {/* Bottom Right Quadrant */}
+      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="80%" y="78%" delay={2.5} duration={4.0} />
+      <FloatingCodeSnippet code={"sudo systemctl restart tailscaled"} x="72%" y="88%" delay={2.7} duration={5.2} />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">
