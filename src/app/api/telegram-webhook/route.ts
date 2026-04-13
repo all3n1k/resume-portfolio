@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!targetKey) {
-      console.warn(`No session found matching ID: ${sessionId}`);
       return new Response("OK", { status: 200 });
     }
 
