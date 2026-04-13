@@ -1,19 +1,21 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "crypto";
+import { redis } from "@/lib/redis";
 
-// ─── Shared session store (globalThis so it syncs with /api/telegram-webhook) ─
+// ─── Redis persistence ──────────────────────────────────────────────────────────
+// Each session is stored as a Redis list of JSON-stringified messages.
+// Key format: `terminal_session:{sessionId}`
+// Metadata (like recruiter name) is stored in a separate hash.
+
+const SESSION_PREFIX = "terminal_session:";
+const META_PREFIX = "terminal_meta:";
+const EXPIRY = 60 * 60 * 24; // 24 hours persistence
+
 interface SessionMessage {
   from: "recruiter" | "allen";
   text: string;
   ts: number;
 }
-
-declare global {
-  var __terminalSessions: Map<string, SessionMessage[]> | undefined;
-}
-const sessions: Map<string, SessionMessage[]> =
-  globalThis.__terminalSessions ??
-  (globalThis.__terminalSessions = new Map());
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,12 +23,20 @@ export async function POST(req: NextRequest) {
 
     // Create session on first message
     const sid = sessionId || randomUUID();
-    if (!sessions.has(sid)) {
-      sessions.set(sid, []);
-    }
+    const sessionKey = `${SESSION_PREFIX}${sid}`;
+    const metaKey = `${META_PREFIX}${sid}`;
 
-    const log = sessions.get(sid)!;
-    log.push({ from: "recruiter", text: message, ts: Date.now() });
+    const newMessage: SessionMessage = { from: "recruiter", text: message, ts: Date.now() };
+
+    // Atomically push message and set expiry
+    await redis.rpush(sessionKey, JSON.stringify(newMessage));
+    await redis.expire(sessionKey, EXPIRY);
+
+    // Store metadata if it's the first message or name is provided
+    if (isFirst || senderName) {
+      await redis.hset(metaKey, { name: senderName || "UNKNOWN" });
+      await redis.expire(metaKey, EXPIRY);
+    }
 
     // Forward to Telegram
     const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -53,25 +63,36 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("Terminal POST error:", e);
     const msg = e instanceof Error ? e.message : String(e);
     return new Response(JSON.stringify({ error: msg }), { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
-  const sessionId = req.nextUrl.searchParams.get("session");
-  if (!sessionId || !sessions.has(sessionId)) {
-    return new Response(JSON.stringify({ messages: [] }), {
+  try {
+    const sessionId = req.nextUrl.searchParams.get("session");
+    if (!sessionId) {
+      return new Response(JSON.stringify({ messages: [] }), { status: 200 });
+    }
+
+    const sessionKey = `${SESSION_PREFIX}${sessionId}`;
+    
+    // Retrieve the full message log from Redis
+    const logsRaw = await redis.lrange<string>(sessionKey, 0, -1);
+    const logs: SessionMessage[] = logsRaw.map(l => 
+      typeof l === 'string' ? JSON.parse(l) : l
+    );
+
+    // Return only Allen's replies (recruiter already has their own messages in state)
+    const replies = logs.filter((m) => m.from === "allen");
+    
+    return new Response(JSON.stringify({ messages: replies }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
+  } catch (e) {
+    console.error("Terminal GET error:", e);
+    return new Response(JSON.stringify({ messages: [] }), { status: 200 });
   }
-
-  const log = sessions.get(sessionId)!;
-  // Return only Allen's replies (recruiter already has their own messages in state)
-  const replies = log.filter((m) => m.from === "allen");
-  return new Response(JSON.stringify({ messages: replies }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 }
