@@ -146,6 +146,7 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
   const [entered, setEntered] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const transitionAction = useRef<"enter" | "exit">("enter");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleDoorClick = useCallback(() => {
     transitionAction.current = "enter";
@@ -182,6 +183,32 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     };
   }, [entered]);
 
+  // Fade-in ambient music when the user enters the portfolio
+  useEffect(() => {
+    if (!entered) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      return;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = 0;
+    audio.play().catch(() => {}); // silent catch for browsers that block autoplay
+    const TARGET = 0.6;
+    const DURATION = 3000; // ms
+    const start = performance.now();
+    let raf: number;
+    const ramp = (now: number) => {
+      const t = Math.min((now - start) / DURATION, 1);
+      audio.volume = t * TARGET;
+      if (t < 1) raf = requestAnimationFrame(ramp);
+    };
+    raf = requestAnimationFrame(ramp);
+    return () => cancelAnimationFrame(raf);
+  }, [entered]);
+
   return (
     <>
       {showTransition && (
@@ -190,8 +217,8 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
 
       {entered ? (
         <div className="relative">
-          {/* Ambient Music Hook. Loaded dynamically alongside 3D scene render. */}
-          <audio src="/audio/synthwave.mp3" autoPlay loop className="hidden" />
+          {/* Ambient Music — volume fades in smoothly via useEffect ramp above */}
+          <audio ref={audioRef} src="/audio/synthwave.mp3" loop className="hidden" />
 
           <MatrixCanvas opacity={0.25} density={0.03} speed={40} mouseTrail={true} />
           <button

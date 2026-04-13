@@ -69,7 +69,7 @@ export default function ChatWidget() {
       {!open && (
         <button
           aria-label="Open terminal"
-          onClick={() => { setOpen(true); setIsExpanded(true); }}
+          onClick={() => setOpen(true)}
           className="group relative w-12 h-12 flex items-center justify-center rounded-none border border-green-500/30 bg-black shadow-[4px_4px_0_rgba(0,255,65,0.1)] hover:shadow-[6px_6px_0_rgba(0,255,65,0.2)] hover:border-green-500/50 transition-all cursor-pointer"
         >
           <span className="text-green-400 font-mono text-lg font-bold group-hover:animate-pulse">{">_"}</span>
@@ -88,10 +88,7 @@ export default function ChatWidget() {
           }`}
         >
           {/* Title bar */}
-          <div 
-            onClick={() => { setIsExpanded(!isExpanded); setIsMinimized(false); }}
-            className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03] cursor-pointer"
-          >
+          <div className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03]">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5 border-r border-green-500/15 pr-3">
                 <button
