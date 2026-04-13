@@ -38,10 +38,10 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
       {/* Removed soft radial glow and local grid for structural UI style */}
 
       {/* Floating code snippets — positioned in far margins to avoid content overlap */}
-      <FloatingCodeSnippet code={"const status = 'online';"} x="1%" y="12%" delay={1.5} />
-      <FloatingCodeSnippet code={"// TODO: hack the planet"} x="82%" y="8%" delay={2.0} />
-      <FloatingCodeSnippet code={"await deploy(future);"} x="88%" y="78%" delay={2.5} />
-      <FloatingCodeSnippet code={"if (problem) solve();"} x="1%" y="82%" delay={1.8} />
+      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="1%" y="12%" delay={1.5} />
+      <FloatingCodeSnippet code={"def update_servo(yaw, pitch):"} x="82%" y="8%" delay={2.0} />
+      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="88%" y="78%" delay={2.5} />
+      <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="1%" y="82%" delay={1.8} />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">
