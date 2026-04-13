@@ -190,6 +190,9 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
 
       {entered ? (
         <div className="relative">
+          {/* Ambient Music Hook. Looks for /public/audio/ambient.mp3 and auto-loops on entry */}
+          <audio src="/audio/ambient.mp3" autoPlay loop className="hidden" />
+
           <MatrixCanvas opacity={0.25} density={0.03} speed={40} mouseTrail={true} />
           <button
             onClick={handleBack}

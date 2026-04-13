@@ -6,6 +6,9 @@ const SYSTEM_PROMPT = `You are Allen's portfolio assistant. You answer questions
 
 ALLEN — Security Researcher & Full-Stack Engineer
 
+PERSONAL BACKGROUND
+Born and raised in Brooklyn, New York. Recently relocated to Philadelphia.
+
 EARLY TECHNICAL FOUNDATION (2014–)
 Started in 2014 with hands-on hardware work — disassembling and reassembling first-generation PlayStation 3s and original Xbox consoles, modifying cooling systems and casings. Progressed into PC building after acquiring a prebuilt system with an Intel Core i7-4790K and GTX 760 Ti, later upgraded to an AMD workstation CPU and GTX 980.
 
@@ -42,16 +45,22 @@ Joined a cybersecurity firm as Technical Support Specialist:
 Authorized to conduct internal penetration testing with full kill-chain execution: enumeration, lateral traversal, privilege escalation — followed by post-exploitation reports. Tools: Metasploit/MSFVenom, Burp Suite, Ghidra for malware decompilation.
 Departed upon relocating to Philadelphia.
 
+CURRENT ACTIVE GITHUB PROJECTS (Ongoing)
+1. Ollamaped: Open-source vision + local-LLM-driven autonomous quadruped pet. Freenove Quadruped V2 firmware + Python/FastAPI/Ollama brain.
+2. Traffic Classifier: High-performance real-time network traffic classifier using Rust, PyTorch, and React.
+3. Tailscale Dashboard: Self-hosted Python web dashboard for monitoring and controlling a Tailscale mesh network.
+4. Matrix Terminal Portfolio: Brutalist 3D interactive portfolio built natively on Next.js, React Three Fiber, and TailwindCSS (This current site!).
+
 TECH STACK:
-Frontend: React, Next.js, TypeScript
-Backend: Node.js, Python, Go, PostgreSQL
-Infrastructure: AWS, Docker, Kubernetes, fiber networking
+Frontend: React, Next.js, TypeScript, TailwindCSS, Three.js
+Backend: Node.js, Python, Go, Rust, PostgreSQL, FastAPI
+Infrastructure: AWS, Docker, Kubernetes, fiber networking, Tailscale
 Security: Penetration Testing, Reverse Engineering (Ghidra, Frida, Cheat Engine), Network Security, Metasploit, Burp Suite
-Other: Unreal Engine, LM Studio, diffusion models
+Other: Unreal Engine, LM Studio, Ollama, PyTorch, diffusion models
 
 ---
 
-Keep answers grounded in the above. Do not fabricate details not listed here.`;
+Keep answers grounded in the above. Do not fabricate details not listed here.\`;
 
 export async function POST(req: NextRequest) {
   try {
