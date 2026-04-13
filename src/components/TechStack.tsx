@@ -24,12 +24,7 @@ const TECH: TechItem[] = [
 ];
 
 const CATEGORIES = ["Frontend", "Backend", "Infra", "Security"];
-const CAT_COLORS: Record<string, string> = {
-  Frontend: "from-cyan-400 to-blue-500",
-  Backend: "from-green-400 to-emerald-500",
-  Infra: "from-purple-400 to-violet-500",
-  Security: "from-red-400 to-orange-500",
-};
+
 const CAT_DOTS: Record<string, string> = {
   Frontend: "bg-cyan-400",
   Backend: "bg-green-400",
@@ -49,61 +44,49 @@ export default function TechStack() {
           className="mb-16"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 max-w-[60px] bg-gradient-to-r from-green-500 to-transparent" />
-            <span className="text-green-400 text-xs font-mono tracking-[0.2em] uppercase">
-              arsenal
+            <span className="text-green-400 text-sm font-mono tracking-widest uppercase">
+              {"//"} DEPENDENCIES
             </span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight">
-            <span className="text-white">Tech </span>
-            <span className="gradient-text">Stack</span>
+          <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter uppercase">
+            <span className="text-white/40">{"< "}</span>
+            <span className="text-white">TechStack</span>
+            <span className="text-white/40">{" />"}</span>
           </h2>
-          <p className="mt-4 text-white/40 text-lg max-w-xl">
-            Tools and technologies I work with daily to build, break, and secure.
+          <p className="mt-4 text-white/40 text-sm font-mono max-w-xl">
+            Libraries, frameworks, and command line tools utilized for architecture and infiltration.
           </p>
         </motion.div>
 
         {/* Category filters as visual labels */}
-        <div className="flex flex-wrap gap-3 mb-10">
+        <div className="flex flex-wrap gap-2 mb-10 border-b border-white/10 pb-4">
           {CATEGORIES.map((cat) => (
             <div
               key={cat}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02]"
+              className="flex items-center gap-2 px-3 py-1 rounded-none border border-white/20 bg-black"
             >
-              <div className={`w-2 h-2 rounded-full ${CAT_DOTS[cat]}`} />
-              <span className="text-xs text-white/50 font-mono">{cat}</span>
+              <div className={`w-2 h-2 rounded-none ${CAT_DOTS[cat]}`} />
+              <span className="text-xs text-white/60 font-mono uppercase tracking-wider">{cat}</span>
             </div>
           ))}
         </div>
 
         {/* Skills grid */}
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-0 border-t border-l border-white/10">
           {TECH.map((tech, i) => (
             <motion.div
               key={tech.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="group relative p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-all"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.2, delay: i * 0.02 }}
+              className="group relative p-4 border-r border-b border-white/10 bg-black hover:bg-white/[0.03] transition-colors flex items-center justify-between"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-1.5 h-1.5 rounded-full ${CAT_DOTS[tech.category]}`} />
-                  <span className="text-white/80 font-medium text-sm">{tech.name}</span>
-                </div>
-                <span className="text-white/20 text-xs font-mono">{tech.level}%</span>
+              <div className="flex items-center gap-4">
+                <div className={`w-1 h-4 ${CAT_DOTS[tech.category]}`} />
+                <span className="text-white/80 font-mono text-sm uppercase tracking-wide">{tech.name}</span>
               </div>
-              {/* Progress bar */}
-              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${tech.level}%` }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, delay: 0.2 + i * 0.05, ease: "easeOut" }}
-                  className={`h-full rounded-full bg-gradient-to-r ${CAT_COLORS[tech.category]}`}
-                />
-              </div>
+              <span className="text-white/30 text-xs font-mono">[{tech.level}%]</span>
             </motion.div>
           ))}
         </div>

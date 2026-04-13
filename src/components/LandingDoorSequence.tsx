@@ -169,6 +169,19 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     setShowTransition(false);
   }, []);
 
+  // Globally track 3D scene state to hide floating UI (like TopNav) when rendering 3D architecture
+  useEffect(() => {
+    if (!entered) {
+      document.body.classList.add("scene-active");
+    } else {
+      document.body.classList.remove("scene-active");
+    }
+    
+    return () => {
+      document.body.classList.remove("scene-active");
+    };
+  }, [entered]);
+
   return (
     <>
       {showTransition && (

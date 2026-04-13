@@ -57,7 +57,7 @@ export default function AchievementSpotlight({ items }: Props) {
             key={ach.id}
             data-idx={idx}
             ref={(el) => { refs.current[idx] = el; }}
-            className={`rounded-xl border border-white/10 p-4 sm:p-5 transition-colors ${
+            className={`rounded-none border border-white/10 p-4 sm:p-5 transition-colors ${
               idx === active ? "bg-white/5" : "bg-white/2"
             }`}
           >

@@ -105,7 +105,7 @@ export default function MouseGlitchText({
       clearTimeout(dissolveTimer);
       clearTimeout(hideTimer);
     };
-  }, [text, glitchRadius, autoDissolveDelay]);
+  }, [text, glitchRadius, autoDissolveDelay, outlineColor, outlineWidth, baseColor]);
 
   if (hidden) return null;
 

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Send, ArrowUpRight } from "lucide-react";
+import { Github, Linkedin, Mail, ArrowUpRight } from "lucide-react";
+import createGlobe from "cobe";
 
 const SOCIAL_LINKS = [
-  { icon: Github, href: "#", label: "GitHub", handle: "@allen" },
-  { icon: Linkedin, href: "#", label: "LinkedIn", handle: "in/allen" },
-  { icon: Mail, href: "mailto:hello@example.com", label: "Email", handle: "hello@example.com" },
+  { icon: Github, href: "https://github.com/all3n1k", label: "GitHub", handle: "github.com/all3n1k" },
+  { icon: Linkedin, href: "https://www.linkedin.com/in/allen-niktalov/", label: "LinkedIn", handle: "in/allen-niktalov" },
+  { icon: Mail, href: "mailto:allenniktalov@gmail.com", label: "Email", handle: "allenniktalov@gmail.com" },
 ];
 
 function LiveClock() {
@@ -21,7 +22,7 @@ function LiveClock() {
           minute: "2-digit",
           second: "2-digit",
           hour12: false,
-          timeZone: "America/Los_Angeles",
+          timeZone: "America/New_York",
         })
       );
     };
@@ -32,6 +33,58 @@ function LiveClock() {
 
   return (
     <span className="tabular-nums">{time || "--:--:--"}</span>
+  );
+}
+
+function TerminalRadar() {
+  return (
+    <div className="relative w-[200px] h-[200px] flex items-center justify-center rounded-full border border-green-500/30 overflow-hidden bg-black/50">
+      {/* Background Matrix Grid */}
+      <div className="absolute inset-0 z-0 opacity-20"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(0, 255, 65, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.2) 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+        }}
+      />
+      
+      {/* Crosshairs */}
+      <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="w-full h-px bg-green-500/20" />
+      </div>
+      <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="h-full w-px bg-green-500/20" />
+      </div>
+      
+      {/* Target Rings */}
+      <div className="absolute w-[150px] h-[150px] rounded-full border border-green-500/10 z-10" />
+      <div className="absolute w-[100px] h-[100px] rounded-full border border-green-500/10 z-10" />
+      <div className="absolute w-[50px] h-[50px] rounded-full border border-green-500/20 z-10" />
+
+      {/* Radar Sweeper */}
+      <div 
+        className="absolute inset-0 z-20 rounded-full animate-[spin_4s_linear_infinite]"
+        style={{
+          background: 'conic-gradient(from 0deg, transparent 70%, rgba(0, 255, 65, 0.1) 80%, rgba(0, 255, 65, 0.8) 100%)',
+        }}
+      />
+
+      {/* PA Targeted Blip */}
+      <div className="absolute z-30" style={{ top: '35%', left: '30%' }}>
+        <div className="relative flex items-center justify-center group">
+          {/* Ping animation rings */}
+          <div className="absolute w-4 h-4 bg-green-400 rounded-full animate-ping opacity-75" />
+          <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_8px_#00ff41]" />
+          
+          {/* Target identifier line */}
+          <div className="absolute top-2 left-2 w-8 h-px bg-green-400/50 rotate-45 origin-top-left" />
+          <div className="absolute top-8 left-8 text-[8px] font-mono text-green-400 tracking-widest bg-black px-1 border border-green-500/30 whitespace-nowrap">
+            TARGET_PA
+          </div>
+        </div>
+      </div>
+      
+
+    </div>
   );
 }
 
@@ -47,17 +100,17 @@ export default function ModernContact() {
           className="mb-16"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 max-w-[60px] bg-gradient-to-r from-green-500 to-transparent" />
-            <span className="text-green-400 text-xs font-mono tracking-[0.2em] uppercase">
-              contact
+            <span className="text-green-400 text-sm font-mono tracking-widest uppercase">
+              {"//"} HANDSHAKE PROTOCOL
             </span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight">
-            <span className="text-white">Let&apos;s </span>
-            <span className="gradient-text">Connect</span>
+          <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter uppercase">
+            <span className="text-white/40">{"< "}</span>
+            <span className="text-white">Contact</span>
+            <span className="text-white/40">{" />"}</span>
           </h2>
-          <p className="mt-4 text-white/40 text-lg max-w-xl">
-            Open to new opportunities, collaborations, and interesting conversations.
+          <p className="mt-4 text-white/40 text-sm font-mono max-w-xl">
+            Transmit directly to secure server. Awaiting initial SYN.
           </p>
         </motion.div>
 
@@ -70,10 +123,10 @@ export default function ModernContact() {
             viewport={{ once: true }}
             className="md:col-span-2 relative group"
           >
-            <div className="relative p-8 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-              <div className="flex items-center gap-2 mb-8">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Send a message</span>
+            <div className="relative p-8 rounded-none border border-white/20 bg-black">
+              <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+                <div className="w-2 h-4 bg-green-400 animate-pulse" />
+                <span className="text-xs font-mono text-white/40 uppercase tracking-widest">Execute POST /message</span>
               </div>
 
               <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
@@ -83,7 +136,7 @@ export default function ModernContact() {
                     <input
                       type="text"
                       placeholder="Your name"
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all text-sm"
                     />
                   </div>
                   <div>
@@ -91,7 +144,7 @@ export default function ModernContact() {
                     <input
                       type="email"
                       placeholder="you@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -100,15 +153,15 @@ export default function ModernContact() {
                   <textarea
                     rows={4}
                     placeholder="What's on your mind?"
-                    className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-white/15 focus:outline-none focus:border-green-500/30 focus:bg-white/[0.04] transition-all resize-none text-sm"
+                    className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all resize-none text-sm"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-green-400 to-emerald-400 hover:brightness-110 transition-all shadow-lg shadow-green-500/10 text-sm"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-none font-mono text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 transition-all text-sm tracking-widest uppercase mt-4"
                 >
-                  Send Message
-                  <Send className="w-4 h-4" />
+                  $ TRANSMIT
+                  <span className="w-2 h-4 bg-green-400 animate-pulse ml-1" />
                 </button>
               </form>
             </div>
@@ -122,24 +175,24 @@ export default function ModernContact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="p-6 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+              className="p-6 rounded-none border border-white/20 bg-black"
             >
-              <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Links</span>
-              <div className="mt-4 space-y-2">
+              <span className="text-xs font-mono text-white/30 uppercase tracking-widest border-b border-white/10 pb-2 block mb-4">Endpoints</span>
+              <div className="space-y-0 text-sm font-mono">
                 {SOCIAL_LINKS.map((link) => (
                   <a
                     key={link.label}
                     href={link.href}
-                    className="group/link flex items-center gap-3 p-3 -mx-3 rounded-xl hover:bg-white/[0.04] transition-colors"
+                    className="group/link flex items-center justify-between py-3 border-b border-white/5 hover:bg-white/[0.03] px-2 -mx-2 transition-colors cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                      <link.icon className="w-4 h-4 text-white/50 group-hover/link:text-green-400 transition-colors" />
+                    <div className="flex items-center gap-3">
+                      <link.icon className="w-4 h-4 text-white/30 group-hover/link:text-green-400 transition-colors" />
+                      <span className="text-white/80 group-hover/link:text-green-400 transition-colors uppercase tracking-wider">{link.label}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-white/80 font-medium">{link.label}</div>
-                      <div className="text-xs text-white/30 font-mono truncate">{link.handle}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/20 hidden sm:block">{link.handle}</span>
+                      <ArrowUpRight className="w-4 h-4 text-white/10 group-hover/link:text-green-400/50 transition-colors" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-white/10 group-hover/link:text-green-400/50 transition-colors" />
                   </a>
                 ))}
               </div>
@@ -151,16 +204,23 @@ export default function ModernContact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="p-6 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+              className="p-6 rounded-none border border-white/20 bg-black relative overflow-hidden"
             >
-              <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Location</span>
-              <div className="mt-4 space-y-3">
-                <div className="text-white/70 text-sm">San Francisco, CA</div>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-2xl font-mono text-green-400 font-bold">
-                    <LiveClock />
-                  </span>
-                  <span className="text-xs text-white/20 font-mono">PST</span>
+              <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.15] pointer-events-none scale-150">
+                <TerminalRadar />
+              </div>
+
+              <div className="relative z-10">
+                <span className="text-xs font-mono text-white/30 uppercase tracking-widest border-b border-white/10 pb-2 block mb-4">Location</span>
+                <div className="space-y-1">
+                  <div className="text-white/80 text-sm font-mono uppercase tracking-wider">Elkins Park, PA</div>
+                  <div className="text-white/40 text-[10px] font-mono tracking-widest mb-3">[40.0768° N, 75.1277° W]</div>
+                  <div className="flex items-baseline gap-3 pt-2 border-t border-white/10">
+                    <span className="text-2xl font-mono text-green-400 font-bold drop-shadow-[0_0_8px_rgba(0,255,65,0.4)]">
+                      <LiveClock />
+                    </span>
+                    <span className="text-xs text-white/30 font-mono uppercase">EST</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -171,14 +231,11 @@ export default function ModernContact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
-              className="p-4 rounded-2xl border border-green-500/10 bg-green-500/[0.03] flex items-center gap-3"
+              className="p-4 rounded-none border border-green-500/20 bg-black flex items-center gap-3"
             >
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-              </span>
-              <span className="text-green-400/80 text-sm font-mono">
-                Open to opportunities
+              <div className="w-2 h-4 bg-green-400 animate-pulse border border-green-400" />
+              <span className="text-green-400/80 text-sm font-mono tracking-widest uppercase">
+                PORT 22 OPEN
               </span>
             </motion.div>
           </div>

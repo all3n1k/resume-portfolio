@@ -6,6 +6,7 @@ import ModernAchievements from "@/components/ModernAchievements";
 import TechStack from "@/components/TechStack";
 import ModernContact from "@/components/ModernContact";
 import MouseGlitchText from "@/components/MouseGlitchText";
+import InitFade from "@/components/InitFade";
 
 const achievements = [
   {
@@ -44,22 +45,32 @@ export default function Home() {
       {/* Massive centered floating text overlay */}
       <div 
         className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold"
-        style={{ fontFamily: "'OCR A Std', 'OCR-A', 'OCR A Extended', monospace" }}
+        style={{ fontFamily: "'Nimbus Mono PS', monospace" }}
       >
         <MouseGlitchText 
-          text="Hello" 
+          text="knock, knock, Allen." 
           baseColor="black"
           outlineColor="#00ff41"
           outlineWidth="4px"
-          className="text-[12vw] md:text-[8rem] tracking-[0.15em] font-black drop-shadow-[0_0_15px_rgba(0,255,65,0.4)]" 
+          className="text-[8vw] md:text-[5rem] tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(0,255,65,0.4)] text-center px-4" 
           glitchRadius={180}
           autoDissolveDelay={5000}
         />
       </div>
 
+      <InitFade />
+
       <LandingDoorSequence>
         <EasterEggManager>
-          <main className="relative z-10 min-h-screen">
+          <main className="relative z-10 min-h-screen bg-black">
+            {/* Global IDE Architectural Grid */}
+            <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.2]" 
+              style={{ 
+                backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
+                backgroundSize: '32px 32px',
+                backgroundPosition: 'center center'
+              }} 
+            />
             <HeroSection
               name="ALLEN"
               tagline="Security researcher and full-stack engineer — building systems that scale and breaking the ones that don't."

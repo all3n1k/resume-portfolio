@@ -15,6 +15,8 @@ export default function ChatWidget() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function ChatWidget() {
         <button
           aria-label="Open terminal"
           onClick={() => setOpen(true)}
-          className="group relative w-12 h-12 flex items-center justify-center rounded-lg border border-green-500/30 bg-black/80 backdrop-blur-sm shadow-[0_0_15px_rgba(0,255,65,0.15)] hover:shadow-[0_0_25px_rgba(0,255,65,0.3)] hover:border-green-500/50 transition-all"
+          className="group relative w-12 h-12 flex items-center justify-center rounded-none border border-green-500/30 bg-black shadow-[4px_4px_0_rgba(0,255,65,0.1)] hover:shadow-[6px_6px_0_rgba(0,255,65,0.2)] hover:border-green-500/50 transition-all cursor-pointer"
         >
           <span className="text-green-400 font-mono text-lg font-bold group-hover:animate-pulse">{">_"}</span>
         </button>
@@ -76,32 +78,45 @@ export default function ChatWidget() {
 
       {/* Terminal window */}
       {open && (
-        <div className="w-[92vw] max-w-[420px] h-[500px] flex flex-col rounded-lg border border-green-500/25 bg-black/95 backdrop-blur-md shadow-[0_0_30px_rgba(0,255,65,0.1),inset_0_1px_0_rgba(0,255,65,0.05)] overflow-hidden">
+        <div 
+          className={`flex flex-col rounded-none border border-green-500/25 bg-black shadow-[8px_8px_0_rgba(0,255,65,0.05)] overflow-hidden transition-all duration-300 ${
+            isMinimized 
+              ? "w-[92vw] max-w-[320px] h-[40px] opacity-75 hover:opacity-100" 
+              : isExpanded 
+                ? "w-[96vw] max-w-[1200px] h-[85vh] right-5 bottom-5" 
+                : "w-[92vw] max-w-[420px] h-[500px]"
+          }`}
+        >
           {/* Title bar */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-green-500/15 bg-green-500/[0.03]">
+          <div className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03]">
             <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 border-r border-green-500/15 pr-3">
                 <button
                   aria-label="Close terminal"
-                  onClick={() => setOpen(false)}
-                  className="w-3 h-3 rounded-full bg-red-500/70 hover:bg-red-500 transition-colors"
+                  onClick={() => { setOpen(false); setIsExpanded(false); setIsMinimized(false); }}
+                  className="w-3 h-3 rounded-none bg-red-500/70 hover:bg-red-500 transition-colors"
                 />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                <button
+                  aria-label="Minimize terminal"
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  className="w-3 h-3 rounded-none bg-yellow-500/70 hover:bg-yellow-500 transition-colors"
+                />
+                <button
+                  aria-label="Expand terminal"
+                  onClick={() => { setIsExpanded(!isExpanded); setIsMinimized(false); }}
+                  className="w-3 h-3 rounded-none bg-green-500/70 hover:bg-green-500 transition-colors"
+                />
               </div>
-              <span className="text-green-500/50 text-xs font-mono">allen@matrix — chat</span>
+              <span className="text-green-500/50 text-[10px] sm:text-xs font-mono">
+                {isMinimized ? "allen@matrix — minimized" : "allen@matrix — chat"}
+              </span>
             </div>
-            <button
-              aria-label="Close terminal"
-              onClick={() => setOpen(false)}
-              className="text-green-500/30 hover:text-green-400 transition-colors"
-            >
-              <X size={14} />
-            </button>
           </div>
 
-          {/* Scanline overlay */}
-          <div className="relative flex-1 overflow-hidden">
+          {/* Scanline overlay & Body */}
+          {!isMinimized && (
+            <>
+              <div className="relative flex-1 overflow-hidden">
             {/* CRT scanline effect */}
             <div
               className="absolute inset-0 pointer-events-none z-10 opacity-[0.03]"
@@ -135,24 +150,25 @@ export default function ChatWidget() {
             </div>
           </div>
 
-          {/* Input */}
-          <div className="border-t border-green-500/15 px-3 py-2.5 flex items-center gap-2 bg-green-500/[0.02]">
-            <span className="text-green-400 font-mono text-sm flex-shrink-0">{">"}</span>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="type a command... (Ctrl+Enter)"
-              className="flex-1 bg-transparent outline-none text-sm font-mono text-green-300 placeholder:text-green-500/25 caret-green-400"
-            />
-            <button
-              onClick={send}
-              disabled={loading}
-              className="flex-shrink-0 px-2.5 py-1.5 rounded border border-green-500/20 bg-green-500/10 text-green-400 text-xs font-mono hover:bg-green-500/20 hover:border-green-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-            >
-              <Send size={12} /> SEND
-            </button>
-          </div>
+            {/* Input */}
+            <div className="border-t border-green-500/15 px-3 py-2.5 flex items-center gap-2 bg-green-500/[0.02]">
+              <span className="text-green-400 font-mono text-sm flex-shrink-0">{">"}</span>
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="type a command... (Ctrl+Enter)"
+                className="flex-1 bg-transparent outline-none text-sm font-mono text-green-300 placeholder:text-green-500/25 caret-green-400"
+              />
+              <button
+                onClick={send}
+                disabled={loading}
+                className="flex-shrink-0 px-2.5 py-1.5 rounded-none border border-green-500/20 bg-black text-green-400 text-xs font-mono hover:bg-green-500/10 hover:border-green-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 uppercase"
+              >
+                <Send size={12} /> SEND
+              </button>
+            </div>
+          </>)}
         </div>
       )}
     </div>

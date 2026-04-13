@@ -105,7 +105,7 @@ export default function EasterEggManager({ children }: { children: React.ReactNo
       
       {tripleClickHint && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100]">
-          <div className="bg-black/80 border border-cyan-500/50 rounded-lg px-4 py-2 text-cyan-400 text-sm font-mono">
+          <div className="bg-black/80 border border-cyan-500/50 rounded-none px-4 py-2 text-cyan-400 text-sm font-mono shadow-[2px_2px_0_rgba(0,255,255,0.2)]">
             Try the Konami Code: ↑↑↓↓←→←→BA
           </div>
         </div>

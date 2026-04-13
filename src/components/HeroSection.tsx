@@ -19,7 +19,7 @@ function FloatingCodeSnippet({ code, x, y, delay }: { code: string; x: string; y
       className="absolute hidden lg:block pointer-events-none select-none"
       style={{ left: x, top: y }}
     >
-      <div className="px-3 py-2 rounded-lg bg-green-500/[0.06] border border-green-500/10 font-mono text-[11px] text-green-500/40 whitespace-pre">
+      <div className="px-3 py-2 rounded-none bg-black border border-green-500/20 font-mono text-[11px] text-green-500/40 whitespace-pre shadow-[4px_4px_0_rgba(0,255,65,0.1)]">
         {code}
       </div>
     </motion.div>
@@ -35,17 +35,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Radial glow behind name */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-green-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(0,255,65,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,65,0.3) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+      {/* Removed soft radial glow and local grid for structural UI style */}
 
       {/* Floating code snippets — positioned in far margins to avoid content overlap */}
       <FloatingCodeSnippet code={"const status = 'online';"} x="1%" y="12%" delay={1.5} />
@@ -63,12 +53,12 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               transition={{ duration: 0.6 }}
               className="mb-6"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-green-500/20 bg-green-500/[0.04]">
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-none border border-green-500/30 bg-black">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  <span className="animate-pulse absolute inline-flex h-full w-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 bg-green-400" />
                 </span>
-                <span className="text-green-400 text-xs font-mono tracking-widest uppercase">Available for work</span>
+                <span className="text-green-400 text-xs font-mono tracking-widest uppercase">[ STATUS: ONLINE ]</span>
               </div>
             </motion.div>
 
@@ -107,7 +97,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-baseline gap-2 px-4 py-2 rounded-xl border border-white/[0.06] bg-white/[0.02]"
+                  className="flex items-baseline gap-2 px-4 py-2 rounded-none border border-white/10 bg-black shadow-[2px_2px_0_rgba(255,255,255,0.05)]"
                 >
                   <span className="text-xl font-bold text-white">{stat.value}</span>
                   <span className="text-xs text-white/40 uppercase tracking-wider">{stat.label}</span>
@@ -124,18 +114,16 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
             >
               <a
                 href="#achievements"
-                className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-black bg-gradient-to-r from-green-400 to-emerald-400 hover:brightness-110 transition-all shadow-lg shadow-green-500/20"
+                className="group relative font-mono inline-flex items-center gap-2 px-7 py-3.5 rounded-none text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 transition-all uppercase tracking-widest text-sm"
               >
-                View Work
-                <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
+                $ execute --view-work
+                <span className="w-2 h-4 bg-green-400 animate-pulse ml-1" />
               </a>
               <a
                 href="#contact"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-white/80 transition-all"
+                className="inline-flex font-mono items-center gap-2 px-7 py-3.5 rounded-none border border-white/20 bg-black hover:bg-white/5 text-white/80 transition-all uppercase tracking-widest text-sm"
               >
-                Get in Touch
+                initiate_contact()
               </a>
             </motion.div>
           </div>
@@ -147,8 +135,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
             transition={{ duration: 1.0, delay: 0.3 }}
             className="relative flex items-end justify-center"
           >
-            {/* Ambient glow behind portrait */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-gradient-radial from-green-500/15 via-emerald-500/5 to-transparent rounded-full blur-[80px] pointer-events-none" />
+            {/* Ambient glow removed for structural UI style */}
             
             {/* Portrait container */}
             <div className="relative w-full max-w-[420px] group">
