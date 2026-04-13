@@ -46,17 +46,17 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
       <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="2%" y="15%" delay={1.5} duration={4.2} />
       <FloatingCodeSnippet code={"chmod +x deploy.sh"} x="8%" y="5%" delay={1.8} duration={3.8} />
 
-      {/* Bottom Left Quadrant */}
-      <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="3%" y="82%" delay={1.8} duration={5.1} />
-      <FloatingCodeSnippet code={"docker-compose up -d --build"} x="6%" y="92%" delay={2.1} duration={4.5} />
+      {/* Bottom Left Quadrant — moved slightly lower and wider */}
+      <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="1%" y="88%" delay={1.8} duration={5.1} />
+      <FloatingCodeSnippet code={"docker-compose up -d --build"} x="6%" y="94%" delay={2.1} duration={4.5} />
 
       {/* Top Right Quadrant */}
       <FloatingCodeSnippet code={"def update_servo(yaw, pitch):"} x="82%" y="8%" delay={2.0} duration={3.5} />
       <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} />
 
       {/* Bottom Right Quadrant */}
-      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="80%" y="78%" delay={2.5} duration={4.0} />
-      <FloatingCodeSnippet code={"sudo systemctl restart tailscaled"} x="72%" y="88%" delay={2.7} duration={5.2} />
+      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="84%" y="82%" delay={2.5} duration={4.0} />
+      <FloatingCodeSnippet code={"sudo systemctl restart tailscaled"} x="72%" y="92%" delay={2.7} duration={5.2} />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">

@@ -74,29 +74,28 @@ export default function Home() {
             />
 
             {/* ── Global Ambient Code Block Layer ── */}
-            {/* These are fixed-position, pointer-events-none snippets scattered across the full scroll depth */}
-            <div className="fixed inset-0 z-0 pointer-events-none hidden lg:block">
-              {/* Achievements Zone — Left margin */}
-              <FloatingCodeSnippet code={"nmap -sV -p 443 target.lan"} x="1%" y="35%" delay={3.0} duration={5.0} />
-              <FloatingCodeSnippet code={"git clone git@github.com:all3n1k/ollamaped"} x="3%" y="45%" delay={2.2} duration={4.3} />
-              <FloatingCodeSnippet code={"let bytes = pcap::Capture::from_device(dev)?"} x="1%" y="55%" delay={3.5} duration={6.0} />
+            {/* Using absolute positioning so they scroll with the content depth */}
+            <div className="absolute inset-0 z-0 pointer-events-none hidden lg:block overflow-hidden">
+              {/* Achievements Zone — Scattered vertically across the scroll */}
+              <FloatingCodeSnippet code={"nmap -sV -p 443 target.lan"} x="1%" y="120vh" delay={3.0} duration={5.0} />
+              <FloatingCodeSnippet code={"git clone git@github.com:all3n1k/ollamaped"} x="3%" y="160vh" delay={2.2} duration={4.3} />
+              <FloatingCodeSnippet code={"let bytes = pcap::Capture::from_device(dev)?"} x="1%" y="200vh" delay={3.5} duration={6.0} />
 
               {/* Achievements Zone — Right margin */}
-              <FloatingCodeSnippet code={"metasploit > use exploit/multi/handler"} x="79%" y="32%" delay={2.8} duration={4.7} />
-              <FloatingCodeSnippet code={"frida -U -l hook.js com.target.app"} x="82%" y="44%" delay={3.2} duration={5.3} />
-              <FloatingCodeSnippet code={"with open('dump.txt', 'r') as f:"} x="77%" y="56%" delay={1.9} duration={4.1} />
+              <FloatingCodeSnippet code={"metasploit > use exploit/multi/handler"} x="79%" y="130vh" delay={2.8} duration={4.7} />
+              <FloatingCodeSnippet code={"frida -U -l hook.js com.target.app"} x="82%" y="170vh" delay={3.2} duration={5.3} />
+              <FloatingCodeSnippet code={"with open('dump.txt', 'r') as f:"} x="77%" y="210vh" delay={1.9} duration={4.1} />
 
-              {/* Tech Stack Zone — Left margin */}
-              <FloatingCodeSnippet code={"tailscale up --accept-routes"} x="2%" y="65%" delay={2.6} duration={3.9} />
-              <FloatingCodeSnippet code={"kubectl apply -f deployment.yaml"} x="5%" y="74%" delay={3.8} duration={5.5} />
+              {/* Tech Stack Zone — Distributed further down */}
+              <FloatingCodeSnippet code={"tailscale up --accept-routes"} x="2%" y="260vh" delay={2.6} duration={3.9} />
+              <FloatingCodeSnippet code={"kubectl apply -f deployment.yaml"} x="5%" y="300vh" delay={3.8} duration={5.5} />
 
-              {/* Tech Stack Zone — Right margin */}
-              <FloatingCodeSnippet code={"ghidra > analyze_headless ./binary"} x="80%" y="63%" delay={2.4} duration={4.6} />
-              <FloatingCodeSnippet code={"model = nn.Sequential(nn.Linear(128, 64))"} x="76%" y="73%" delay={3.1} duration={5.8} />
+              <FloatingCodeSnippet code={"ghidra > analyze_headless ./binary"} x="80%" y="270vh" delay={2.4} duration={4.6} />
+              <FloatingCodeSnippet code={"model = nn.Sequential(nn.Linear(128, 64))"} x="76%" y="290vh" delay={3.1} duration={5.8} />
 
-              {/* Contact Zone */}
-              <FloatingCodeSnippet code={"msfvenom -p linux/x64/shell_reverse_tcp"} x="1%" y="84%" delay={2.0} duration={4.4} />
-              <FloatingCodeSnippet code={"docker build -t classifier:latest ."} x="79%" y="85%" delay={2.9} duration={5.1} />
+              {/* Contact Zone — Deep footer area */}
+              <FloatingCodeSnippet code={"msfvenom -p linux/x64/shell_reverse_tcp"} x="1%" y="350vh" delay={2.0} duration={4.4} />
+              <FloatingCodeSnippet code={"docker build -t classifier:latest ."} x="79%" y="360vh" delay={2.9} duration={5.1} />
             </div>
 
             <HeroSection
