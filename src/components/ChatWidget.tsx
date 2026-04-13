@@ -48,7 +48,7 @@ export default function ChatWidget() {
         ...m,
         {
           role: "assistant",
-          content: "ERROR: Connection to model failed. Is your local Ollama instance fully running?",
+          content: "ERROR: Connection to model failed. If deployed, check Vercel Runtime Logs for upstream API rejection.",
         },
       ]);
     } finally {
