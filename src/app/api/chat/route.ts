@@ -60,7 +60,7 @@ Other: Unreal Engine, LM Studio, Ollama, PyTorch, diffusion models
 
 ---
 
-Keep answers grounded in the above. Do not fabricate details not listed here.\`;
+Keep answers grounded in the above. Do not fabricate details not listed here.`;
 
 export async function POST(req: NextRequest) {
   try {

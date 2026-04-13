@@ -69,7 +69,7 @@ export default function ChatWidget() {
       {!open && (
         <button
           aria-label="Open terminal"
-          onClick={() => setOpen(true)}
+          onClick={() => { setOpen(true); setIsExpanded(true); }}
           className="group relative w-12 h-12 flex items-center justify-center rounded-none border border-green-500/30 bg-black shadow-[4px_4px_0_rgba(0,255,65,0.1)] hover:shadow-[6px_6px_0_rgba(0,255,65,0.2)] hover:border-green-500/50 transition-all cursor-pointer"
         >
           <span className="text-green-400 font-mono text-lg font-bold group-hover:animate-pulse">{">_"}</span>
@@ -88,23 +88,25 @@ export default function ChatWidget() {
           }`}
         >
           {/* Title bar */}
-          <div className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03]">
+          <div 
+            onClick={() => { setIsExpanded(!isExpanded); setIsMinimized(false); }}
+            className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03] cursor-pointer"
+          >
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5 border-r border-green-500/15 pr-3">
                 <button
-                  aria-label="Close terminal"
-                  onClick={() => { setOpen(false); setIsExpanded(false); setIsMinimized(false); }}
-                  className="w-3 h-3 rounded-none bg-red-500/70 hover:bg-red-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); setIsExpanded(false); setIsMinimized(false); }}
+                  className="w-3 h-3 rounded-none bg-red-500/70 hover:bg-red-500 transition-colors pointer-events-auto"
                 />
                 <button
                   aria-label="Minimize terminal"
-                  onClick={() => setIsMinimized(!isMinimized)}
-                  className="w-3 h-3 rounded-none bg-yellow-500/70 hover:bg-yellow-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
+                  className="w-3 h-3 rounded-none bg-yellow-500/70 hover:bg-yellow-500 transition-colors pointer-events-auto"
                 />
                 <button
                   aria-label="Expand terminal"
-                  onClick={() => { setIsExpanded(!isExpanded); setIsMinimized(false); }}
-                  className="w-3 h-3 rounded-none bg-green-500/70 hover:bg-green-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); setIsMinimized(false); }}
+                  className="w-3 h-3 rounded-none bg-green-500/70 hover:bg-green-500 transition-colors pointer-events-auto"
                 />
               </div>
               <span className="text-green-500/50 text-[10px] sm:text-xs font-mono">
