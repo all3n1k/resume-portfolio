@@ -30,13 +30,24 @@ export async function POST(req: Request) {
       },
     });
 
-    // Format the email payload securely
+    // Format timestamp functionally to 12-Hour EST
+    const timestamp = new Date().toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    // Format the email payload securely and professionally
     const mailOptions = {
       from: `"${name}" <${process.env.GMAIL_USER}>`, // Send through authenticated user to avoid spoofing rejections
       replyTo: email, // Set the reply-to header to the person's email so you can hit "Reply" in your inbox directly
       to: process.env.GMAIL_USER, // Send it to your own inbox
-      subject: `[Terminal Portfolio] New comm from ${name}`,
-      text: `SENDER_ID: ${name}\nEMAIL: ${email}\nTIMESTAMP: ${new Date().toISOString()}\n\nDECRYPTED_BODY:\n${message}`,
+      subject: `Portfolio Contact: ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\nTime: ${timestamp} EST\n\nMessage:\n${message}`,
     };
 
     // Execute the transmission sequence

@@ -167,19 +167,27 @@ export default function ModernContact() {
                   <div className="text-green-400 font-bold mb-6 text-base tracking-wider">{"> "} 200 OK: PACKET DELIVERED.</div>
                   <div className="text-green-500/70 flex justify-between">
                     <span>TIMESTAMP:</span>
-                    <span className="text-green-400/90">{new Date().toISOString()}</span>
+                    <span className="text-green-400/90">
+                      {new Date().toLocaleString("en-US", {
+                        timeZone: "America/New_York",
+                        month: "numeric",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })} EST
+                    </span>
                   </div>
                   <div className="text-green-500/70 flex justify-between">
-                    <span>SENDER_ID:</span>
-                    <span className="text-green-400/90">{formData.name.toUpperCase()}</span>
+                    <span>NAME:</span>
+                    <span className="text-green-400/90">{formData.name}</span>
                   </div>
                   <div className="text-green-500/70 flex justify-between">
-                    <span>TCP_BYTES:</span>
-                    {/* Cheap byte size estimate for flair */}
+                    <span>SIZE:</span>
                     <span className="text-green-400/90">{formData.message.length * 4}b</span>
                   </div>
                   <div className="text-green-500/70 border-t border-green-500/10 pt-3 mt-3">
-                    <span className="block mb-2 text-green-500/40">DECRYPTED_BODY:</span>
+                    <span className="block mb-2 text-green-500/40">MESSAGE:</span>
                     <span className="text-green-400/80 whitespace-pre-wrap">{formData.message}</span>
                   </div>
                   <div className="mt-8 pt-4 flex items-center gap-3 text-green-500/40 text-xs tracking-widest border-t border-green-500/10">
