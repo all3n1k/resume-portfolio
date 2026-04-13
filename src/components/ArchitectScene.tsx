@@ -920,7 +920,7 @@ function Scene({
       <ScreenBezels positions={positions} />
 
       {/* Door */}
-      <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} isDevActive={isDevActive} />
+      <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
 
       {/* ── Neo (Standing, left side) ────────────────────────────── */}
       <group position={ARCHITECT_CONFIG.neoPosition} rotation={ARCHITECT_CONFIG.neoRotation}>
