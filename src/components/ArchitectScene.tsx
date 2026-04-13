@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
@@ -10,7 +10,6 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
-import { DevInspectorRaycaster, DevInspectorUI, devStore } from "./DevInspector";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -523,10 +522,9 @@ interface DoorProps {
   onClick: () => void;
   hovered: boolean;
   onHover: (h: boolean) => void;
-  isDevActive?: boolean;
 }
 
-function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
+function Door({ onClick, hovered, onHover }: DoorProps) {
   const innerRef = useRef<THREE.Group>(null);
   const leafRef = useRef<THREE.Group>(null);
   const lightRef = useRef<THREE.PointLight>(null);
@@ -594,7 +592,6 @@ function Door({ onClick, hovered, onHover, isDevActive }: DoorProps) {
     <group
       position={[0, 1.6, -13.95]}
       onClick={(e) => {
-        if (isDevActive) return;
         e.stopPropagation();
         setIsOpen(true);
         onClick();
@@ -823,7 +820,6 @@ interface SceneProps {
   onDoorHover: (h: boolean) => void;
   onDoorClick: () => void;
   videoPaths: string[];
-  isDevActive?: boolean;
   isActiveScreen: boolean;
 }
 
@@ -837,7 +833,6 @@ function Scene({
   onDoorHover,
   onDoorClick,
   videoPaths,
-  isDevActive,
   isActiveScreen,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -941,16 +936,16 @@ function Scene({
       {/* OrbitControls — look-only in production, fully unlocked noclip in Dev Mode */}
       <OrbitControls
         ref={orbitRef}
-        enablePan={!!isDevActive}
-        enableZoom={!!isDevActive}
+        enablePan={false}
+        enableZoom={false}
         enableDamping
         dampingFactor={0.08}
-        // Tighten vertical (Y) movement to hide extreme ceiling/floor, unless in dev mode or in transition
-        maxPolarAngle={isDevActive || cameraTarget !== null || isActiveScreen ? Math.PI : Math.PI / 2 + 0.05}
-        minPolarAngle={isDevActive || cameraTarget !== null || isActiveScreen ? 0 : Math.PI / 2.2}
-        // Tighten horizontal (X) to 80 degrees total, unless in dev mode or transitioning out of bounds
-        minAzimuthAngle={isDevActive || cameraTarget !== null || isActiveScreen ? -Infinity : -40 * (Math.PI / 180)}
-        maxAzimuthAngle={isDevActive || cameraTarget !== null || isActiveScreen ? Infinity : 40 * (Math.PI / 180)}
+        // Tighten vertical (Y) movement to hide extreme ceiling/floor, unless in transition
+        maxPolarAngle={cameraTarget !== null || isActiveScreen ? Math.PI : Math.PI / 2 + 0.05}
+        minPolarAngle={cameraTarget !== null || isActiveScreen ? 0 : Math.PI / 2.2}
+        // Tighten horizontal (X) to 80 degrees total, unless transitioning out of bounds
+        minAzimuthAngle={cameraTarget !== null || isActiveScreen ? -Infinity : -40 * (Math.PI / 180)}
+        maxAzimuthAngle={cameraTarget !== null || isActiveScreen ? Infinity : 40 * (Math.PI / 180)}
         rotateSpeed={0.45}
       />
     </>
@@ -960,7 +955,6 @@ function Scene({
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function ArchitectScene({ onDoorClick, videoPaths = [] }: ArchitectSceneProps) {
-  const isDevActive = useSyncExternalStore(devStore.subscribe, () => devStore.isDevActive, () => false);
   const positions = useMemo(() => buildPositions(), []);
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen | null>(null);
@@ -991,13 +985,13 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
 
   const handleMonitorClick = useCallback(
     (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => {
-      if (isDevActive || isReturning || activeScreen) return;
+      if (isReturning || activeScreen) return;
       const src = getVideoSrc(instanceId);
       setActiveScreen({ instanceId, worldPosition: worldPos, lookAtPosition: lookAtPos, videoSrc: src });
       setCameraTarget(worldPos);
       setCameraLookAtTarget(lookAtPos);
     },
-    [isDevActive, isReturning, activeScreen, getVideoSrc]
+    [isReturning, activeScreen, getVideoSrc]
   );
 
   // Camera has finished moving
@@ -1067,13 +1061,9 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           onDoorHover={setDoorHovered}
           onDoorClick={handleDoorClick}
           videoPaths={videoPaths}
-          isDevActive={isDevActive}
           isActiveScreen={!!activeScreen}
         />
-        <DevInspectorRaycaster />
       </Canvas>
-
-      <DevInspectorUI />
 
       {/* Fullscreen video overlay */}
       {videoVisible && activeScreen && (

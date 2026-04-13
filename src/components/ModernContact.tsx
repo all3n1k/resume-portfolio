@@ -88,6 +88,40 @@ function TerminalRadar() {
 }
 
 export default function ModernContact() {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
+  const [loadingPhase, setLoadingPhase] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+    
+    setStatus("submitting");
+    setLoadingPhase("[ ESTABLISHING SECURE TUNNEL... ]");
+    
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Transmission Rejected");
+      }
+
+      setLoadingPhase("[ 200 OK: PAYLOAD DELIVERED ]");
+      setTimeout(() => setStatus("success"), 500);
+
+    } catch (error) {
+      console.error(error);
+      setLoadingPhase("[ ERROR: TRANSMISSION FAILED ]");
+      setTimeout(() => setStatus("idle"), 2000);
+    }
+  };
+
   return (
     <section id="contact" className="relative py-28 md:py-36">
       <div className="max-w-6xl mx-auto px-6">
@@ -128,41 +162,89 @@ export default function ModernContact() {
                 <span className="text-xs font-mono text-white/40 uppercase tracking-widest">Execute POST /message</span>
               </div>
 
-              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Name</label>
-                    <input
-                      type="text"
-                      placeholder="Your name"
-                      className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all text-sm"
-                    />
+              {status === "success" ? (
+                <div className="p-6 border border-green-500/30 bg-green-500/[0.02] font-mono text-sm space-y-3">
+                  <div className="text-green-400 font-bold mb-6 text-base tracking-wider">{"> "} 200 OK: PACKET DELIVERED.</div>
+                  <div className="text-green-500/70 flex justify-between">
+                    <span>TIMESTAMP:</span>
+                    <span className="text-green-400/90">{new Date().toISOString()}</span>
                   </div>
-                  <div>
-                    <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Email</label>
-                    <input
-                      type="email"
-                      placeholder="you@example.com"
-                      className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all text-sm"
-                    />
+                  <div className="text-green-500/70 flex justify-between">
+                    <span>SENDER_ID:</span>
+                    <span className="text-green-400/90">{formData.name.toUpperCase()}</span>
+                  </div>
+                  <div className="text-green-500/70 flex justify-between">
+                    <span>TCP_BYTES:</span>
+                    {/* Cheap byte size estimate for flair */}
+                    <span className="text-green-400/90">{formData.message.length * 4}b</span>
+                  </div>
+                  <div className="text-green-500/70 border-t border-green-500/10 pt-3 mt-3">
+                    <span className="block mb-2 text-green-500/40">DECRYPTED_BODY:</span>
+                    <span className="text-green-400/80 whitespace-pre-wrap">{formData.message}</span>
+                  </div>
+                  <div className="mt-8 pt-4 flex items-center gap-3 text-green-500/40 text-xs tracking-widest border-t border-green-500/10">
+                    <span className="w-2 h-4 bg-green-400 animate-pulse border border-green-400" /> CONNECTION TERMINATED.
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Message</label>
-                  <textarea
-                    rows={4}
-                    placeholder="What's on your mind?"
-                    className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 transition-all resize-none text-sm"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-none font-mono text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 transition-all text-sm tracking-widest uppercase mt-4"
-                >
-                  $ TRANSMIT
-                  <span className="w-2 h-4 bg-green-400 animate-pulse ml-1" />
-                </button>
-              </form>
+              ) : (
+                <form className="space-y-5" onSubmit={handleSubmit}>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Name</label>
+                      <input
+                        type="text"
+                        required
+                        disabled={status === "submitting"}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Your name"
+                        className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 disabled:opacity-50 transition-all text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Email</label>
+                      <input
+                        type="email"
+                        required
+                        disabled={status === "submitting"}
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="you@example.com"
+                        className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 disabled:opacity-50 transition-all text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/30 font-mono mb-2 uppercase tracking-wider">Message</label>
+                    <textarea
+                      rows={4}
+                      required
+                      disabled={status === "submitting"}
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      placeholder="What's on your mind?"
+                      className="w-full px-4 py-3 rounded-none bg-black border border-white/10 text-green-400 font-mono placeholder:text-white/10 focus:outline-none focus:border-green-500/50 focus:bg-green-500/5 disabled:opacity-50 transition-all resize-none text-sm"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={status === "submitting"}
+                    className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-none font-mono text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 disabled:bg-green-500/5 disabled:border-green-500/20 disabled:text-green-500/50 transition-all text-sm tracking-widest uppercase mt-4 overflow-hidden"
+                  >
+                    {status === "submitting" ? (
+                      <>
+                        <span className="inline-block w-3 h-3 border-2 border-green-500/30 border-t-green-400 rounded-full animate-spin mr-2" />
+                        {loadingPhase}
+                      </>
+                    ) : (
+                      <>
+                        $ TRANSMIT
+                        <span className="w-2 h-4 bg-green-400 group-hover:animate-pulse ml-1" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           </motion.div>
 
