@@ -12,32 +12,6 @@ interface TerminalLine {
   typed?: boolean; // system lines type character by character
 }
 
-// ─── Typewriter hook ──────────────────────────────────────────────────────────
-
-function useTypewriter(text: string, speed = 28, onDone?: () => void) {
-  const [displayed, setDisplayed] = useState("");
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    setDisplayed("");
-    setDone(false);
-    if (!text) return;
-    let i = 0;
-    const iv = setInterval(() => {
-      i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length) {
-        clearInterval(iv);
-        setDone(true);
-        onDone?.();
-      }
-    }, speed);
-    return () => clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
-
-  return { displayed, done };
-}
 
 // ─── Boot sequence lines ──────────────────────────────────────────────────────
 
