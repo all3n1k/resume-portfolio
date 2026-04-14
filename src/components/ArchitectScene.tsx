@@ -5,11 +5,19 @@ import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
   OrbitControls,
+  Html,
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
+import InteractiveTerminal from "./InteractiveTerminal";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+// Indices of monitors that will be replaced with real interactive HTML
+// Choosing some front-row central monitors for easiest discovery
+const INTERACTIVE_IDS = [0, 1, 2, 42, 84, 126]; 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -417,32 +425,54 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
   return (
     <>
       {groups.map((groupPositions, gi) => (
-        <GreenScreenGroup key={gi} positions={groupPositions} material={screenMats[gi]} geometry={roundScreenGeo} dummy={dummy} />
+        <GreenScreenGroup 
+          key={gi} 
+          positions={groupPositions} 
+          material={screenMats[gi]} 
+          geometry={roundScreenGeo} 
+          dummy={dummy} 
+          startIdx={gi}
+          step={screenMats.length}
+        />
       ))}
     </>
   );
 }
 
-function GreenScreenGroup({ positions, material, geometry, dummy }: {
+function GreenScreenGroup({ positions, material, geometry, dummy, startIdx, step }: {
   positions: MonitorPosition[];
   material: THREE.MeshBasicMaterial;
   geometry: THREE.BufferGeometry;
   dummy: THREE.Object3D;
+  startIdx: number;
+  step: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   useEffect(() => {
     if (!meshRef.current) return;
+    
     positions.forEach((p, i) => {
-      dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.lookAtY, 0);
-      dummy.translateZ(0.6);
+      // Recover global index: i * step + startIdx
+      const globalIdx = i * step + startIdx;
+      
+      if (INTERACTIVE_IDS.includes(globalIdx)) {
+        // Hide this instance by scaling it to 0 or moving it far away
+        dummy.position.set(0, -100, 0); 
+        dummy.scale.set(0, 0, 0);
+      } else {
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.scale.set(1, 1, 1);
+        dummy.lookAt(0, p.lookAtY, 0);
+        dummy.translateZ(0.6);
+      }
+      
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
     meshRef.current.computeBoundingSphere();
-  }, [positions, dummy]);
+  }, [positions, dummy, startIdx, step]);
 
   return (
     <instancedMesh ref={meshRef} args={[geometry, material, positions.length]} frustumCulled={false} />
@@ -450,6 +480,52 @@ function GreenScreenGroup({ positions, material, geometry, dummy }: {
 }
 
 // ─── Bezel edge highlight (thin emissive ring around each screen) ─────────────
+
+function InteractiveMonitorLayer({ positions, activeId, onClose }: { 
+  positions: MonitorPosition[]; 
+  activeId: number | null;
+  onClose: () => void;
+}) {
+  return (
+    <group>
+      {INTERACTIVE_IDS.map((id) => {
+        const p = positions[id];
+        if (!p) return null;
+        const isFocused = activeId === id;
+
+        return (
+          <group key={id} position={[p.x, p.y, p.z]}>
+            <Html
+              transform
+              distanceFactor={0.8}
+              position={[0, 0, 0.61]} // Sit flush against the bezel
+              rotation={[0, -p.angle, 0]}
+              occlude="blending"
+              style={{
+                width: "1024px",
+                height: "768px",
+                transition: "opacity 0.5s",
+                opacity: 1,
+              }}
+            >
+              <div className="relative group">
+                <InteractiveTerminal />
+                {isFocused && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClose(); }}
+                    className="absolute top-4 left-4 z-50 px-6 py-2 bg-black border border-green-500 text-green-500 font-mono text-sm hover:bg-green-500 hover:text-black transition-colors"
+                  >
+                    ← CLOSE
+                  </button>
+                )}
+              </div>
+            </Html>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
 
 function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -921,6 +997,13 @@ function Scene({
       <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
       <GreenScreens positions={positions} videoPaths={videoPaths} />
       <ScreenBezels positions={positions} />
+      
+      {/* Interactive HTML Layer */}
+      <InteractiveMonitorLayer 
+        positions={positions} 
+        activeId={cameraTarget ? positions.findIndex(p => p.x === cameraTarget.x && p.y === cameraTarget.y) : null} 
+        onClose={onCameraArrived} 
+      />
 
       {/* Door */}
       <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
@@ -1011,9 +1094,12 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
-      setVideoVisible(true);
+      // Only show top-level video overlay if the screen isn't an interactive one
+      if (activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
+        setVideoVisible(true);
+      }
     }
-  }, [isDoorApproach, isReturning]);
+  }, [isDoorApproach, isReturning, activeScreen]);
 
   const handleDoorClick = useCallback(() => {
     pendingDoorCallback.current = onDoorClick;
