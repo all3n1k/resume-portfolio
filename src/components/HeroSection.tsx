@@ -171,7 +171,7 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
                 alt="Allen - Security Researcher & Full-Stack Engineer"
                 className="relative z-10 w-full h-auto object-contain transition-all duration-700"
                 style={{ 
-                  filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 20px 50px rgba(0,0,0,0.9)) drop-shadow(0px 0px 20px rgba(0,255,65,0.25))",
+                  filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 0px 22px rgba(0,255,65,0.18))",
                   maxHeight: "75vh",
                 }}
               />

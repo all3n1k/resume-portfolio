@@ -57,7 +57,7 @@ export default function ChatWidget() {
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }
@@ -156,7 +156,7 @@ export default function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="type a command... (Ctrl+Enter)"
+                placeholder="type a command..."
                 className="flex-1 bg-transparent outline-none text-sm font-mono text-green-300 placeholder:text-green-500/25 caret-green-400"
               />
               <button

@@ -73,12 +73,13 @@ export default function MediaShowcase() {
           const togglePlay = () => setPlaying(prev => ({ ...prev, [project.id]: !prev[project.id] }));
 
           return (
-            <motion.div 
+            <motion.div
               key={project.id}
+              id={project.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: idx * 0.15 }}
-              className="flex flex-col p-6 sm:p-8 border-r border-b border-white/10 bg-black hover:bg-white/[0.02] transition-colors group"
+              className="flex flex-col p-6 sm:p-8 border-r border-b border-white/10 bg-black hover:bg-white/[0.02] transition-colors group scroll-mt-24"
             >
               {/* Header Box */}
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
