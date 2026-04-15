@@ -14,7 +14,11 @@ const SYSTEM_LOGS = [
   "[OK] Memory allocation stable @ 82.4%",
 ];
 
-export default function InteractiveTerminal() {
+interface InteractiveTerminalProps {
+  fullscreen?: boolean;
+}
+
+export default function InteractiveTerminal({ fullscreen = false }: InteractiveTerminalProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const [userInput, setUserInput] = useState("");
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -27,7 +31,7 @@ export default function InteractiveTerminal() {
         index++;
       } else {
         const ambient = `[PASS] Heartbeat at ${new Date().toLocaleTimeString()}`;
-        setLogs((prev) => [...prev.slice(-15), ambient]);
+        setLogs((prev) => [...prev.slice(-20), ambient]);
       }
     }, 2000);
     return () => clearInterval(interval);
@@ -49,18 +53,22 @@ export default function InteractiveTerminal() {
     }
   };
 
+  const fontSize = fullscreen ? 15 : 20;
+  const headerSize = fullscreen ? 20 : 28;
+  const inputSize = fullscreen ? 16 : 24;
+
   return (
     <div
       style={{
         position: "relative",
-        width: "1024px",
-        height: "768px",
+        width: "100%",
+        height: "100%",
         background: "#000",
         color: "#00ff41",
         fontFamily: "'Courier New', Courier, monospace",
-        padding: "48px",
+        padding: fullscreen ? "32px 40px" : "48px",
         overflow: "hidden",
-        border: "16px solid rgba(26,26,26,0.8)",
+        border: "1px solid rgba(0,255,65,0.25)",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
@@ -72,17 +80,18 @@ export default function InteractiveTerminal() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 32,
-          paddingBottom: 16,
+          marginBottom: fullscreen ? 20 : 32,
+          paddingBottom: fullscreen ? 12 : 16,
           borderBottom: "1px solid rgba(0,255,65,0.3)",
+          flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: 28, fontWeight: 900, fontStyle: "italic", letterSpacing: "0.1em" }}>
+        <div style={{ fontSize: headerSize, fontWeight: 900, fontStyle: "italic", letterSpacing: "0.1em" }}>
           ARCHITECT OS v0.9
         </div>
         <div
           style={{
-            fontSize: 18,
+            fontSize: fullscreen ? 13 : 18,
             border: "1px solid rgba(0,255,65,0.2)",
             padding: "2px 8px",
             textTransform: "uppercase",
@@ -92,13 +101,13 @@ export default function InteractiveTerminal() {
         </div>
       </div>
 
-      {/* Log Viewport — scrollbar hidden via scrollbarWidth */}
+      {/* Log viewport */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
-          marginBottom: 24,
-          fontSize: 20,
+          marginBottom: fullscreen ? 16 : 24,
+          fontSize,
           lineHeight: 1.7,
           scrollbarWidth: "none",
         }}
@@ -106,7 +115,7 @@ export default function InteractiveTerminal() {
         {logs.map((log, i) => (
           <div
             key={i}
-            style={{ color: (log ?? "").startsWith(">") ? "#22d3ee" : "#00ff41", marginBottom: 6 }}
+            style={{ color: (log ?? "").startsWith(">") ? "#22d3ee" : "#00ff41", marginBottom: 4 }}
           >
             {log ?? ""}
           </div>
@@ -114,10 +123,11 @@ export default function InteractiveTerminal() {
         <div ref={logEndRef} />
       </div>
 
-      {/* Input Line */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 24 }}>
+      {/* Input */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: inputSize, flexShrink: 0 }}>
         <span style={{ color: "#22d3ee" }}>$</span>
         <input
+          autoFocus={fullscreen}
           style={{
             background: "transparent",
             border: "none",
@@ -135,13 +145,13 @@ export default function InteractiveTerminal() {
         />
       </div>
 
-      {/* CRT Scanline overlay */}
+      {/* CRT scanline overlay */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          opacity: 0.05,
+          opacity: 0.04,
           background:
             "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,1) 2px, rgba(0,255,65,1) 4px)",
         }}

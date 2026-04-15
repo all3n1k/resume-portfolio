@@ -5,7 +5,6 @@ import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
   OrbitControls,
-  Html,
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
@@ -481,70 +480,6 @@ function GreenScreenGroup({ positions, material, geometry, dummy, startIdx, step
 
 // ─── Bezel edge highlight (thin emissive ring around each screen) ─────────────
 
-function InteractiveMonitorLayer({ positions, activeId, onClose }: { 
-  positions: MonitorPosition[]; 
-  activeId: number | null;
-  onClose: () => void;
-}) {
-  // Pre-compute the quaternion for each interactive monitor so Html faces inward correctly.
-  // Each monitor was placed with dummy.lookAt(0, lookAtY, 0), so we replicate that rotation.
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-
-  return (
-    <group>
-      {INTERACTIVE_IDS.map((id) => {
-        const p = positions[id];
-        if (!p) return null;
-        const isFocused = activeId === id;
-
-        // Compute the same rotation the CRT case uses: lookAt center, then bake into euler
-        dummy.position.set(p.x, p.y, p.z);
-        dummy.lookAt(0, p.lookAtY, 0);
-        const rot = dummy.rotation.clone();
-
-        return (
-          <group key={id} position={[p.x, p.y, p.z]} rotation={rot}>
-            <Html
-              transform
-              distanceFactor={13}
-              position={[0, 0, 0.61]}
-              style={{
-                width: "1024px",
-                height: "768px",
-                pointerEvents: isFocused ? "auto" : "none",
-              }}
-              zIndexRange={[10, 20]}
-            >
-              <div style={{ position: "relative", width: "1024px", height: "768px" }}>
-                <InteractiveTerminal />
-                {isFocused && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    style={{
-                      position: "absolute",
-                      top: 16,
-                      right: 16,
-                      zIndex: 50,
-                      background: "rgba(0,0,0,0.8)",
-                      border: "1px solid #00ff41",
-                      color: "#00ff41",
-                      fontFamily: "monospace",
-                      fontSize: 14,
-                      padding: "6px 14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕ CLOSE
-                  </button>
-                )}
-              </div>
-            </Html>
-          </group>
-        );
-      })}
-    </group>
-  );
-}
 
 function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -903,6 +838,83 @@ function VideoOverlay({ src, onClose }: VideoOverlayProps) {
   );
 }
 
+// ─── Fullscreen terminal overlay (for interactive monitors) ────────────────────
+
+function TerminalOverlay({ onClose }: { onClose: () => void }) {
+  const [opacity, setOpacity] = useState(0);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setOpacity(1));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setOpacity(0);
+    setTimeout(onClose, 500);
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: "#000",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        opacity,
+        transition: "opacity 0.5s ease",
+        overflow: "hidden",
+      }}
+    >
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          zIndex: 60,
+          background: "rgba(0,0,0,0.7)",
+          border: "1px solid rgba(0,255,65,0.4)",
+          color: "#00ff41",
+          fontFamily: "monospace",
+          fontSize: 13,
+          padding: "8px 16px",
+          borderRadius: 4,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          backdropFilter: "blur(8px)",
+          transition: "background 0.2s",
+        }}
+        onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,65,0.12)")}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.7)")}
+      >
+        ← BACK
+      </button>
+
+      {/* Terminal fills the screen */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+        <div style={{ width: "100%", maxWidth: 900, height: "80vh" }}>
+          <InteractiveTerminal fullscreen />
+        </div>
+      </div>
+
+      {/* CRT scanline */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── Scene contents (split out so Canvas context is available) ────────────────
 
 interface SceneProps {
@@ -917,8 +929,6 @@ interface SceneProps {
   videoPaths: string[];
   isActiveScreen: boolean;
   isDoorApproach: boolean;
-  activeScreenId: number | null;
-  onCloseInteractive: () => void;
 }
 
 function Scene({
@@ -933,8 +943,6 @@ function Scene({
   videoPaths,
   isActiveScreen,
   isDoorApproach,
-  activeScreenId,
-  onCloseInteractive,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -1020,13 +1028,6 @@ function Scene({
       <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
       <GreenScreens positions={positions} videoPaths={videoPaths} />
       <ScreenBezels positions={positions} />
-      
-      {/* Interactive HTML Layer */}
-      <InteractiveMonitorLayer 
-        positions={positions} 
-        activeId={activeScreenId} 
-        onClose={onCloseInteractive} 
-      />
 
       {/* Door */}
       <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
@@ -1070,6 +1071,7 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [cameraLookAtTarget, setCameraLookAtTarget] = useState<THREE.Vector3 | null>(null);
   const [videoVisible, setVideoVisible] = useState(false);
+  const [terminalVisible, setTerminalVisible] = useState(false);
   const [doorHovered, setDoorHovered] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
   const [isDoorApproach, setIsDoorApproach] = useState(false);
@@ -1117,8 +1119,11 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
-      // Only show top-level video overlay if the screen isn't an interactive one
-      if (activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
+      if (activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
+        // Show fullscreen terminal overlay for interactive monitors
+        setTerminalVisible(true);
+      } else {
+        // Show video overlay for regular monitors
         setVideoVisible(true);
       }
     }
@@ -1133,8 +1138,8 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
 
   const handleCloseVideo = useCallback(() => {
     setVideoVisible(false);
+    setTerminalVisible(false);
     setIsReturning(true);
-    // Animate camera back to home position facing the door
     setCameraTarget(ARCHITECT_CONFIG.cameraHome.clone());
     setCameraLookAtTarget(ARCHITECT_CONFIG.cameraLookAtHome.clone());
   }, []);
@@ -1175,13 +1180,16 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
           isDoorApproach={isDoorApproach}
-          activeScreenId={activeScreen?.instanceId ?? null}
-          onCloseInteractive={handleCloseVideo}
         />
       </Canvas>
 
-      {/* Fullscreen video overlay */}
-      {videoVisible && activeScreen && (
+      {/* Fullscreen terminal overlay for interactive monitors */}
+      {terminalVisible && activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId) && (
+        <TerminalOverlay onClose={handleCloseVideo} />
+      )}
+
+      {/* Fullscreen video overlay for regular monitors */}
+      {videoVisible && activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId) && (
         <VideoOverlay src={activeScreen.videoSrc} onClose={handleCloseVideo} />
       )}
 
