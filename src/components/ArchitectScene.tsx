@@ -486,6 +486,10 @@ function InteractiveMonitorLayer({ positions, activeId, onClose }: {
   activeId: number | null;
   onClose: () => void;
 }) {
+  // Pre-compute the quaternion for each interactive monitor so Html faces inward correctly.
+  // Each monitor was placed with dummy.lookAt(0, lookAtY, 0), so we replicate that rotation.
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
   return (
     <group>
       {INTERACTIVE_IDS.map((id) => {
@@ -493,29 +497,44 @@ function InteractiveMonitorLayer({ positions, activeId, onClose }: {
         if (!p) return null;
         const isFocused = activeId === id;
 
+        // Compute the same rotation the CRT case uses: lookAt center, then bake into euler
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.lookAt(0, p.lookAtY, 0);
+        const rot = dummy.rotation.clone();
+
         return (
-          <group key={id} position={[p.x, p.y, p.z]}>
+          <group key={id} position={[p.x, p.y, p.z]} rotation={rot}>
             <Html
               transform
-              distanceFactor={0.8}
-              position={[0, 0, 0.61]} // Sit flush against the bezel
-              rotation={[0, -p.angle, 0]}
-              occlude="blending"
+              distanceFactor={13}
+              position={[0, 0, 0.61]}
               style={{
                 width: "1024px",
                 height: "768px",
-                transition: "opacity 0.5s",
-                opacity: 1,
+                pointerEvents: isFocused ? "auto" : "none",
               }}
+              zIndexRange={[10, 20]}
             >
-              <div className="relative group">
+              <div style={{ position: "relative", width: "1024px", height: "768px" }}>
                 <InteractiveTerminal />
                 {isFocused && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="absolute top-4 left-4 z-50 px-6 py-2 bg-black border border-green-500 text-green-500 font-mono text-sm hover:bg-green-500 hover:text-black transition-colors"
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      zIndex: 50,
+                      background: "rgba(0,0,0,0.8)",
+                      border: "1px solid #00ff41",
+                      color: "#00ff41",
+                      fontFamily: "monospace",
+                      fontSize: 14,
+                      padding: "6px 14px",
+                      cursor: "pointer",
+                    }}
                   >
-                    ← CLOSE
+                    ✕ CLOSE
                   </button>
                 )}
               </div>
@@ -898,6 +917,8 @@ interface SceneProps {
   videoPaths: string[];
   isActiveScreen: boolean;
   isDoorApproach: boolean;
+  activeScreenId: number | null;
+  onCloseInteractive: () => void;
 }
 
 function Scene({
@@ -912,6 +933,8 @@ function Scene({
   videoPaths,
   isActiveScreen,
   isDoorApproach,
+  activeScreenId,
+  onCloseInteractive,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -1001,8 +1024,8 @@ function Scene({
       {/* Interactive HTML Layer */}
       <InteractiveMonitorLayer 
         positions={positions} 
-        activeId={cameraTarget ? positions.findIndex(p => p.x === cameraTarget.x && p.y === cameraTarget.y) : null} 
-        onClose={onCameraArrived} 
+        activeId={activeScreenId} 
+        onClose={onCloseInteractive} 
       />
 
       {/* Door */}
@@ -1152,6 +1175,8 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
           isDoorApproach={isDoorApproach}
+          activeScreenId={activeScreen?.instanceId ?? null}
+          onCloseInteractive={handleCloseVideo}
         />
       </Canvas>
 
