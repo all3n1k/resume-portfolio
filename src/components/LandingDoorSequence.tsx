@@ -4,6 +4,43 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import ArchitectScene from "./ArchitectScene";
 import MatrixCanvas from "./MatrixCanvas";
 
+// ─── WebGL Capability Detection ───────────────────────────────────────────────
+
+type WebGLTier = "ok" | "low" | "none";
+
+function detectWebGLTier(): WebGLTier {
+  if (typeof window === "undefined") return "ok"; // SSR — assume fine
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      (canvas.getContext("webgl2") as WebGL2RenderingContext | null) ??
+      (canvas.getContext("webgl") as WebGLRenderingContext | null);
+
+    if (!gl) return "none";
+
+    // Check for software renderers — these will white-screen on complex scenes
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    if (ext) {
+      const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string;
+      const lower = renderer.toLowerCase();
+      const isSoftware =
+        lower.includes("swiftshader") ||
+        lower.includes("llvmpipe") ||
+        lower.includes("softpipe") ||
+        lower.includes("microsoft basic render") ||
+        lower.includes("mesa");
+      if (isSoftware) return "low";
+    }
+
+    // No WebGL2 support = old hardware, flag as low
+    if (!canvas.getContext("webgl2")) return "low";
+
+    return "ok";
+  } catch {
+    return "none";
+  }
+}
+
 interface LandingDoorSequenceProps {
   children: React.ReactNode;
 }
@@ -147,6 +184,13 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
   const [showTransition, setShowTransition] = useState(false);
   const transitionAction = useRef<"enter" | "exit">("enter");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [webGLTier, setWebGLTier] = useState<WebGLTier>("ok");
+  const [bypassDismissed, setBypassDismissed] = useState(false);
+
+  // Detect WebGL capability once on mount (client-only)
+  useEffect(() => {
+    setWebGLTier(detectWebGLTier());
+  }, []);
 
   const handleDoorClick = useCallback(() => {
     transitionAction.current = "enter";
@@ -218,9 +262,56 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
         <MatrixRain onMidpoint={handleMidpoint} onComplete={handleComplete} />
       )}
 
-      {entered ? (
+      {/* ── WebGL Bypass Mode ── */}
+      {webGLTier !== "ok" ? (
         <div className="relative">
-
+          {/* Dismissible warning banner */}
+          {!bypassDismissed && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 200,
+                background: "rgba(0,0,0,0.92)",
+                borderBottom: "1px solid rgba(0,255,65,0.3)",
+                padding: "10px 20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontFamily: "monospace",
+                fontSize: 12,
+                color: "rgba(0,255,65,0.8)",
+                gap: 12,
+              }}
+            >
+              <span>
+                {webGLTier === "none"
+                  ? "[WARN] WebGL unavailable — 3D scene disabled. Portfolio mode active."
+                  : "[WARN] Low-power GPU detected — 3D scene bypassed for stability. Portfolio mode active."}
+              </span>
+              <button
+                onClick={() => setBypassDismissed(true)}
+                style={{
+                  background: "transparent",
+                  border: "1px solid rgba(0,255,65,0.4)",
+                  color: "#00ff41",
+                  fontFamily: "monospace",
+                  fontSize: 11,
+                  padding: "3px 10px",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                ✕ DISMISS
+              </button>
+            </div>
+          )}
+          {children}
+        </div>
+      ) : entered ? (
+        <div className="relative">
           <MatrixCanvas opacity={0.25} density={0.03} speed={40} mouseTrail={true} />
           <button
             onClick={handleBack}

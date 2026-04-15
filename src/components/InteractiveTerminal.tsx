@@ -106,9 +106,9 @@ export default function InteractiveTerminal() {
         {logs.map((log, i) => (
           <div
             key={i}
-            style={{ color: log.startsWith(">") ? "#22d3ee" : "#00ff41", marginBottom: 6 }}
+            style={{ color: (log ?? "").startsWith(">") ? "#22d3ee" : "#00ff41", marginBottom: 6 }}
           >
-            {log}
+            {log ?? ""}
           </div>
         ))}
         <div ref={logEndRef} />
