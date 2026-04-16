@@ -11,6 +11,36 @@ import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
 
+// ─── GPU quality detection ────────────────────────────────────────────────────
+// Runs synchronously so Canvas gets the correct gl props on first render — no flash.
+type GPUQuality = 'full' | 'reduced';
+
+function detectGPUQuality(): GPUQuality {
+  if (typeof window === 'undefined') return 'full';
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null;
+    if (!gl) return 'reduced';
+
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (ext) {
+      const r = (gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string).toLowerCase();
+      if (
+        r.includes('intel') ||
+        r.includes('adreno 3') || r.includes('adreno 4') ||
+        r.includes('mali-t') ||
+        r.includes('sgx') ||
+        (r.includes('amd') && !r.includes('radeon rx') && !r.includes('radeon pro'))
+      ) return 'reduced';
+    }
+
+    if ((gl.getParameter(gl.MAX_TEXTURE_SIZE) as number) < 8192) return 'reduced';
+    return 'full';
+  } catch {
+    return 'full';
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function createRoundedPlaneGeo(width: number, height: number, radius: number) {
@@ -196,9 +226,10 @@ function CameraRig({ targetPos, targetLookAt, onArrived, orbitRef, isDoorApproac
 interface CRTWallProps {
   positions: MonitorPosition[];
   onMonitorClick: (instanceId: number, worldPos: THREE.Vector3, lookAtPos: THREE.Vector3) => void;
+  isLowEnd: boolean;
 }
 
-function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
+function CRTWall({ positions, onMonitorClick, isLowEnd }: CRTWallProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
@@ -273,19 +304,26 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
   const hitMeshRef = useRef<THREE.InstancedMesh>(null);
   const color = useMemo(() => new THREE.Color(), []);
 
-  // Update hover glow color per instance
-  useFrame(() => {
+  // ─ HOVER GLOW ──────────────────────────────────────────────────────────────────────
+  // O(1) update on hover change instead of O(n) every frame.
+  // Track previously hovered ID so we can reset it specifically.
+  const prevHoveredRef = useRef<number | null>(null);
+  useEffect(() => {
     if (!hitMeshRef.current) return;
-    for (let i = 0; i < positions.length; i++) {
-      // Additive blending: Black is invisible. Glow brightly if hovered.
-      const hoverStr = i === hoveredId ? 0.35 : 0;
-      color.setRGB(hoverStr * 0.5, hoverStr, hoverStr * 0.5); // neon green glow
-      hitMeshRef.current.setColorAt(i, color);
+    const black = new THREE.Color(0, 0, 0);
+    const glow  = new THREE.Color(0.175, 0.35, 0.175); // neon green
+
+    if (prevHoveredRef.current !== null) {
+      hitMeshRef.current.setColorAt(prevHoveredRef.current, black);
+    }
+    if (hoveredId !== null) {
+      hitMeshRef.current.setColorAt(hoveredId, glow);
     }
     if (hitMeshRef.current.instanceColor) {
       hitMeshRef.current.instanceColor.needsUpdate = true;
     }
-  });
+    prevHoveredRef.current = hoveredId;
+  }, [hoveredId]);
 
   // Set matrices for hit geometry
   useEffect(() => {
@@ -310,8 +348,8 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
       <instancedMesh
         ref={meshRef}
         args={[caseGeo, caseMat, positions.length]}
-        castShadow
-        receiveShadow
+        castShadow={!isLowEnd}
+        receiveShadow={!isLowEnd}
         frustumCulled={false}
       />
 
@@ -341,9 +379,11 @@ function CRTWall({ positions, onMonitorClick }: CRTWallProps) {
 interface GreenScreensProps {
   positions: MonitorPosition[];
   videoPaths: string[];
+  isLowEnd: boolean;
+  isVisible: boolean;
 }
 
-function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
+function GreenScreens({ positions, videoPaths, isLowEnd, isVisible }: GreenScreensProps) {
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   // Create one video + canvas + material per video path (now using tiny 320x240 transcodes)
@@ -380,7 +420,7 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
 
   const screenMats = useMemo(() => screenData.map((d) => d.mat), [screenData]);
 
-  // Draw loops with proper cleanup
+  // Draw loops: 24fps full-quality, 12fps on reduced. Pause when scene not visible.
   useEffect(() => {
     let cancelled = false;
 
@@ -388,11 +428,14 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
       if (!vid || !ctx || !tex) return;
       vid.play().catch(() => { });
 
+      // 12fps on low-end (83ms), 24fps full (42ms)
+      const frameMs = isLowEnd ? 83 : 42;
       let lastDraw = 0;
       const drawLoop = (now: number) => {
         if (cancelled) return;
         requestAnimationFrame(drawLoop);
-        if (now - lastDraw < 42) return; // ~24fps
+        if (!isVisible) return;          // pause canvas uploads when tab/section hidden
+        if (now - lastDraw < frameMs) return;
         lastDraw = now;
         if (vid.readyState >= 2) {
           ctx.drawImage(vid, 0, 0, 256, 192);
@@ -403,7 +446,7 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
     });
 
     return () => { cancelled = true; };
-  }, [screenData]);
+  }, [screenData, isLowEnd, isVisible]);
 
   // Split positions round-robin by video index
   const groups = useMemo(() => {
@@ -816,6 +859,8 @@ interface SceneProps {
   videoPaths: string[];
   isActiveScreen: boolean;
   isDoorApproach: boolean;
+  isLowEnd: boolean;
+  isVisible: boolean;
 }
 
 function Scene({
@@ -830,6 +875,8 @@ function Scene({
   videoPaths,
   isActiveScreen,
   isDoorApproach,
+  isLowEnd,
+  isVisible,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -867,53 +914,59 @@ function Scene({
         isDoorApproach={isDoorApproach}
       />
 
-      {/* Lighting - Subtly graded with a faintly noticeable Matrix green tint */}
+      {/* Lighting */}
       <ambientLight intensity={0.55} color="#dce8e3" />
       <directionalLight
         position={[0, 12, 5]}
         intensity={1.3}
-        color="#f0f8f5" // Nearly white with a 1% green coolness
-        castShadow
-        shadow-mapSize={[1024, 1024]}
+        color="#f0f8f5"
+        castShadow={!isLowEnd}
+        shadow-mapSize={isLowEnd ? [512, 512] : [1024, 1024]}
         shadow-camera-far={60}
         shadow-camera-left={-25}
         shadow-camera-right={25}
         shadow-camera-top={15}
         shadow-camera-bottom={-5}
       />
-      {/* Subtle fill from behind viewer, pushing deep, faint cinematic green into shadows */}
       <directionalLight position={[0, 4, 8]} intensity={0.3} color="#0c1b14" />
 
       <ScreenGlow />
 
-      {/* Background & fog: graded to almost pure black/grey, with only the slimmest hint of dark green */}
       <color attach="background" args={["#060a08"]} />
       <fog attach="fog" args={["#060a08", 16, 45]} />
 
-      {/* Reflective floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      {/* Reflective floor — reduced settings on low-end, plain material on very slow hardware */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={!isLowEnd}>
         <planeGeometry args={[100, 100]} />
-        <MeshReflectorMaterial
-          blur={[1200, 1200]}
-          resolution={1024}
-          mixBlur={3}
-          mixStrength={35}
-          roughness={0.75}
-          depthScale={1.2}
-          minDepthThreshold={0.8}
-          maxDepthThreshold={3.5}
-          color="#eeeeee83"
-          metalness={0.1}
-          mirror={0.35}
-        />
+        {isLowEnd ? (
+          <meshStandardMaterial
+            color="#111111"
+            roughness={0.9}
+            metalness={0.05}
+          />
+        ) : (
+          <MeshReflectorMaterial
+            blur={[1200, 1200]}
+            resolution={1024}
+            mixBlur={3}
+            mixStrength={35}
+            roughness={0.75}
+            depthScale={1.2}
+            minDepthThreshold={0.8}
+            maxDepthThreshold={3.5}
+            color="#eeeeee83"
+            metalness={0.1}
+            mirror={0.35}
+          />
+        )}
       </mesh>
 
       {/* Room shell */}
       <RoomShell />
 
       {/* Monitor wall */}
-      <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
-      <GreenScreens positions={positions} videoPaths={videoPaths} />
+      <CRTWall positions={positions} onMonitorClick={onMonitorClick} isLowEnd={isLowEnd} />
+      <GreenScreens positions={positions} videoPaths={videoPaths} isLowEnd={isLowEnd} isVisible={isVisible} />
       <ScreenBezels positions={positions} />
 
       {/* Door */}
@@ -953,6 +1006,26 @@ function Scene({
 
 export default function ArchitectScene({ onDoorClick, videoPaths = [] }: ArchitectSceneProps) {
   const positions = useMemo(() => buildPositions(), []);
+
+  // Detect GPU quality once, synchronously, before Canvas is created so gl props are correct
+  // from the very first render frame — no flash, no re-creation of the WebGL context.
+  const gpuQuality = useMemo<GPUQuality>(() => detectGPUQuality(), []);
+  const isLowEnd = gpuQuality === 'reduced';
+
+  // Track whether the scene div is intersecting the viewport.
+  // When false, video draw loops skip the canvas upload entirely.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const [activeScreen, setActiveScreen] = useState<ActiveScreen | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
@@ -1024,7 +1097,8 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   }, []);
 
   return (
-    <div 
+    <div
+      ref={containerRef}
       style={{ 
         position: "relative", 
         width: "100%", 
@@ -1035,16 +1109,15 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       }}
     >
       <Canvas
-        shadows
-        dpr={[1, 2]}
+        shadows={!isLowEnd}
+        dpr={isLowEnd ? 1 : [1, 1.5]}
         camera={{ position: [0, 1.6, 0], fov: 50 }}
         gl={{
-          antialias: true,
+          antialias: !isLowEnd,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.1,
         }}
-        // Only re-render when something changes — huge perf win when idle
         frameloop="always"
       >
         <Scene
@@ -1059,6 +1132,8 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
           isDoorApproach={isDoorApproach}
+          isLowEnd={isLowEnd}
+          isVisible={isVisible}
         />
       </Canvas>
 
