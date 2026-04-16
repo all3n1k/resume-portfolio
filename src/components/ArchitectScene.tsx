@@ -5,19 +5,11 @@ import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
   OrbitControls,
-  Html,
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Model as NeoModel } from "./NeoModel";
 import ArchitectModel from "./ArchitectModel";
-import InteractiveTerminal from "./InteractiveTerminal";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-// Indices of monitors that will be replaced with real interactive HTML
-// Choosing some front-row central monitors for easiest discovery
-const INTERACTIVE_IDS = [0, 1, 2, 42, 84, 126]; 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -431,144 +423,36 @@ function GreenScreens({ positions, videoPaths }: GreenScreensProps) {
           material={screenMats[gi]} 
           geometry={roundScreenGeo} 
           dummy={dummy} 
-          startIdx={gi}
-          step={screenMats.length}
         />
       ))}
     </>
   );
 }
 
-function GreenScreenGroup({ positions, material, geometry, dummy, startIdx, step }: {
+function GreenScreenGroup({ positions, material, geometry, dummy }: {
   positions: MonitorPosition[];
   material: THREE.MeshBasicMaterial;
   geometry: THREE.BufferGeometry;
   dummy: THREE.Object3D;
-  startIdx: number;
-  step: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   useEffect(() => {
     if (!meshRef.current) return;
-    
     positions.forEach((p, i) => {
-      // Recover global index: i * step + startIdx
-      const globalIdx = i * step + startIdx;
-      
-      if (INTERACTIVE_IDS.includes(globalIdx)) {
-        // Hide this instance by scaling it to 0 or moving it far away
-        dummy.position.set(0, -100, 0); 
-        dummy.scale.set(0, 0, 0);
-      } else {
-        dummy.position.set(p.x, p.y, p.z);
-        dummy.scale.set(1, 1, 1);
-        dummy.lookAt(0, p.lookAtY, 0);
-        dummy.translateZ(0.6);
-      }
-      
+      dummy.position.set(p.x, p.y, p.z);
+      dummy.scale.set(1, 1, 1);
+      dummy.lookAt(0, p.lookAtY, 0);
+      dummy.translateZ(0.6);
       dummy.updateMatrix();
       meshRef.current!.setMatrixAt(i, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
     meshRef.current.computeBoundingSphere();
-  }, [positions, dummy, startIdx, step]);
+  }, [positions, dummy]);
 
   return (
     <instancedMesh ref={meshRef} args={[geometry, material, positions.length]} frustumCulled={false} />
-  );
-}
-
-// ─── Interactive HTML terminals on specific monitors ────────────────────────────
-
-// The screen geometry is createRoundedPlaneGeo(0.85, 0.64, ...) — 0.85 × 0.64 world units.
-// We map a 1024×768 HTML element to that size by scaling the parent group:
-//   scaleX = 0.85 / 1024 ≈ 0.00083  →  1024px × scaleX = 0.85 units  ✓
-//   scaleY = 0.64 / 768  ≈ 0.00083  →  768px  × scaleY = 0.64 units  ✓
-// distanceFactor is intentionally omitted — the group scale + matrix3d handles it.
-const HTML_W = 1024;
-const HTML_H = 768;
-const SCREEN_W = 0.85;  // world units, must match createRoundedPlaneGeo width
-const SCREEN_H = 0.64;  // world units, must match createRoundedPlaneGeo height
-const SCALE_X = SCREEN_W / HTML_W;
-const SCALE_Y = SCREEN_H / HTML_H;
-
-function InteractiveMonitorLayer({
-  positions,
-  focusedId,
-  onClose,
-}: {
-  positions: MonitorPosition[];
-  focusedId: number | null;
-  onClose: () => void;
-}) {
-  // CRITICAL: Memoize rotations so the Euler objects are STABLE across renders.
-  // Without this, each render creates a new Euler → R3F thinks the prop changed
-  // → Html portal detaches+reattaches its DOM element every frame → FLASHING.
-  const stableRotations = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    return INTERACTIVE_IDS.map((id) => {
-      const p = positions[id];
-      if (!p) return new THREE.Euler();
-      dummy.position.set(p.x, p.y, p.z);
-      dummy.lookAt(0, p.lookAtY, 0);
-      return dummy.rotation.clone(); // stable, won't mutate
-    });
-  }, [positions]); // positions is useMemo'd in parent — always same reference
-
-  return (
-    <group>
-      {INTERACTIVE_IDS.map((id, idx) => {
-        const p = positions[id];
-        if (!p) return null;
-        const isFocused = focusedId === id;
-
-        return (
-          // scale: makes 1024×768 HTML element exactly fill the 0.85×0.64 unit screen
-          <group
-            key={id}
-            position={[p.x, p.y, p.z]}
-            rotation={stableRotations[idx]}
-            scale={[SCALE_X, SCALE_Y, 1]}
-          >
-            <Html
-              transform
-              position={[0, 0, 0.61]} // z in LOCAL space (no z-scale applied)
-              style={{
-                width: `${HTML_W}px`,
-                height: `${HTML_H}px`,
-                // When not focused: pass ALL mouse events through to the Three.js canvas
-                pointerEvents: isFocused ? "auto" : "none",
-                userSelect: isFocused ? "auto" : "none",
-              }}
-            >
-              <InteractiveTerminal />
-              {isFocused && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onClose(); }}
-                  style={{
-                    position: "absolute",
-                    top: 20,
-                    right: 20,
-                    background: "rgba(0,0,0,0.85)",
-                    border: "2px solid #00ff41",
-                    color: "#00ff41",
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: 22,
-                    padding: "8px 20px",
-                    cursor: "pointer",
-                    zIndex: 10,
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  ✕ CLOSE
-                </button>
-              )}
-            </Html>
-          </group>
-        );
-      })}
-    </group>
   );
 }
 
@@ -836,7 +720,7 @@ function Door({ onClick, hovered, onHover }: DoorProps) {
   );
 }
 
-// ─── Fullscreen video overlay ─────────────────────────────────────────────────
+// \u2500\u2500\u2500 Fullscreen video overlay \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 interface VideoOverlayProps {
   src: string;
@@ -846,7 +730,6 @@ interface VideoOverlayProps {
 function VideoOverlay({ src, onClose }: VideoOverlayProps) {
   const [opacity, setOpacity] = useState(0);
 
-  // Fade in on mount
   useEffect(() => {
     const id = requestAnimationFrame(() => setOpacity(1));
     return () => cancelAnimationFrame(id);
@@ -870,95 +753,6 @@ function VideoOverlay({ src, onClose }: VideoOverlayProps) {
         transition: "opacity 0.5s ease",
       }}
     >
-      {/* Back button */}
-      <button
-        onClick={handleClose}
-        style={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          zIndex: 60,
-          background: "rgba(0,0,0,0.7)",
-          border: "1px solid rgba(0,255,65,0.4)",
-          color: "#00ff41",
-          fontFamily: "monospace",
-          fontSize: 13,
-          padding: "8px 16px",
-          borderRadius: 4,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          backdropFilter: "blur(8px)",
-          transition: "background 0.2s",
-        }}
-        onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLButtonElement).style.background =
-          "rgba(0,255,65,0.12)")
-        }
-        onMouseLeave={(e) =>
-        ((e.currentTarget as HTMLButtonElement).style.background =
-          "rgba(0,0,0,0.7)")
-        }
-      >
-        ← BACK
-      </button>
-
-      {/* Video */}
-      <video
-        src={src}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-      />
-
-      {/* Scanline overlay for CRT feel */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)",
-          pointerEvents: "none",
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Fullscreen terminal overlay (for interactive monitors) ────────────────────
-
-function TerminalOverlay({ onClose }: { onClose: () => void }) {
-  const [opacity, setOpacity] = useState(0);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setOpacity(1));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  const handleClose = () => {
-    setOpacity(0);
-    setTimeout(onClose, 500);
-  };
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "#000",
-        zIndex: 50,
-        display: "flex",
-        flexDirection: "column",
-        opacity,
-        transition: "opacity 0.5s ease",
-        overflow: "hidden",
-      }}
-    >
-      {/* Close button */}
       <button
         onClick={handleClose}
         style={{
@@ -983,17 +777,19 @@ function TerminalOverlay({ onClose }: { onClose: () => void }) {
         onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,65,0.12)")}
         onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.7)")}
       >
-        ← BACK
+        \u2190 BACK
       </button>
 
-      {/* Terminal fills the screen */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-        <div style={{ width: "100%", maxWidth: 900, height: "80vh" }}>
-          <InteractiveTerminal fullscreen />
-        </div>
-      </div>
+      <video
+        src={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+      />
 
-      {/* CRT scanline */}
       <div
         style={{
           position: "absolute",
@@ -1006,7 +802,7 @@ function TerminalOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Scene contents (split out so Canvas context is available) ────────────────
+// \u2500\u2500\u2500 Scene contents (split out so Canvas context is available) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 interface SceneProps {
   positions: MonitorPosition[];
@@ -1020,8 +816,6 @@ interface SceneProps {
   videoPaths: string[];
   isActiveScreen: boolean;
   isDoorApproach: boolean;
-  focusedInteractiveId: number | null;
-  onCloseInteractive: () => void;
 }
 
 function Scene({
@@ -1036,8 +830,6 @@ function Scene({
   videoPaths,
   isActiveScreen,
   isDoorApproach,
-  focusedInteractiveId,
-  onCloseInteractive,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -1123,13 +915,6 @@ function Scene({
       <CRTWall positions={positions} onMonitorClick={onMonitorClick} />
       <GreenScreens positions={positions} videoPaths={videoPaths} />
       <ScreenBezels positions={positions} />
-
-      {/* Interactive HTML layer — always live on the monitor surfaces, no pop-in */}
-      <InteractiveMonitorLayer
-        positions={positions}
-        focusedId={focusedInteractiveId}
-        onClose={onCloseInteractive}
-      />
 
       {/* Door */}
       <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
@@ -1220,15 +1005,9 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
-      // Interactive monitors: Html is already live on screen, camera arrival = focus
-      // Regular monitors: show the video overlay
-      if (activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
-        setVideoVisible(true);
-      }
-      // For interactive monitors, focusedInteractiveId (derived from activeScreen) is
-      // already set and enables pointer-events on the Html element automatically
+      setVideoVisible(true);
     }
-  }, [isDoorApproach, isReturning, activeScreen]);
+  }, [isDoorApproach, isReturning]);
 
   const handleDoorClick = useCallback(() => {
     pendingDoorCallback.current = onDoorClick;
@@ -1280,17 +1059,11 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
           isDoorApproach={isDoorApproach}
-          focusedInteractiveId={
-            activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId)
-              ? activeScreen.instanceId
-              : null
-          }
-          onCloseInteractive={handleCloseVideo}
         />
       </Canvas>
 
-      {/* Fullscreen video overlay for regular monitors only */}
-      {videoVisible && activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId) && (
+      {/* Fullscreen video overlay */}
+      {videoVisible && activeScreen && (
         <VideoOverlay src={activeScreen.videoSrc} onClose={handleCloseVideo} />
       )}
 
