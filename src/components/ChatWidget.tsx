@@ -64,7 +64,7 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50">
       {/* Toggle button */}
       {!open && (
         <button
@@ -81,11 +81,12 @@ export default function ChatWidget() {
         <div 
           className={`flex flex-col rounded-none border border-green-500/25 bg-black shadow-[8px_8px_0_rgba(0,255,65,0.05)] overflow-hidden transition-all duration-300 ${
             isMinimized 
-              ? "w-[92vw] max-w-[320px] h-[40px] opacity-75 hover:opacity-100" 
+              ? "w-[80vw] max-w-[280px] h-[40px] opacity-75 hover:opacity-100" 
               : isExpanded 
-                ? "w-[96vw] max-w-[1200px] h-[85vh] right-5 bottom-5" 
-                : "w-[92vw] max-w-[420px] h-[500px]"
+                ? "w-[94vw] max-w-[1200px] h-[85vh] right-0 bottom-0 sm:right-5 sm:bottom-5" 
+                : "w-[92vw] sm:w-[420px] max-h-[70vh] sm:max-h-[500px] h-full"
           }`}
+          style={{ height: !isMinimized && !isExpanded ? '500px' : undefined }}
         >
           {/* Title bar */}
           <div className="flex items-center justify-between px-4 h-[40px] border-b border-green-500/15 bg-green-500/[0.03]">

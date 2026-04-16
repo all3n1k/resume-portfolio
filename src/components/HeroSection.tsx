@@ -10,7 +10,11 @@ interface HeroSectionProps {
 }
 
 
-export function FloatingCodeSnippet({ code, x, y, delay, duration = 4 }: { code: string; x: string; y: string; delay: number; duration?: number }) {
+export function FloatingCodeSnippet({ 
+  code, x, y, delay, duration = 4, mobileVisible = false 
+}: { 
+  code: string; x: string; y: string; delay: number; duration?: number; mobileVisible?: boolean 
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8, y: 0 }}
@@ -20,7 +24,7 @@ export function FloatingCodeSnippet({ code, x, y, delay, duration = 4 }: { code:
         scale: { duration: 0.8, delay },
         y: { duration, repeat: Infinity, ease: "easeInOut", delay }
       }}
-      className="absolute hidden lg:block pointer-events-none select-none"
+      className={`absolute ${mobileVisible ? 'block' : 'hidden lg:block'} pointer-events-none select-none`}
       style={{ left: x, top: y }}
     >
       <div className="px-3 py-2 rounded-none bg-black border border-green-500/20 font-mono text-[11px] text-green-500/40 whitespace-pre shadow-[4px_4px_0_rgba(0,255,65,0.1)] backdrop-blur-sm">
@@ -38,28 +42,26 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
   if (!mounted) return null;
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center">
-      {/* Removed soft radial glow and local grid for structural UI style */}
-
-      {/* Floating code snippets — scattered organically across the margins */}
-      {/* Top Left Quadrant */}
-      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="2%" y="15%" delay={1.5} duration={4.2} />
+    <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden">
+      {/* Floating code snippets */}
+      {/* Top Left Quadrant — Mobile Visible */}
+      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="5%" y="15%" delay={1.5} duration={4.2} mobileVisible={true} />
       <FloatingCodeSnippet code={"chmod +x deploy.sh"} x="8%" y="5%" delay={1.8} duration={3.8} />
 
-      {/* Bottom Left Quadrant — moved slightly lower and wider */}
+      {/* Bottom Left Quadrant */}
       <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="1%" y="88%" delay={1.8} duration={5.1} />
-      <FloatingCodeSnippet code={"docker-compose up -d --build"} x="6%" y="94%" delay={2.1} duration={4.5} />
+      <FloatingCodeSnippet code={"docker-compose up -d"} x="6%" y="94%" delay={2.1} duration={4.5} />
 
-      {/* Top Right Quadrant */}
-      <FloatingCodeSnippet code={"def update_servo(yaw, pitch):"} x="82%" y="8%" delay={2.0} duration={3.5} />
-      <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} />
+      {/* Top Right Quadrant — Mobile Visible */}
+      <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} mobileVisible={true} />
+      <FloatingCodeSnippet code={"def update_servo(yaw):"} x="82%" y="8%" delay={2.0} duration={3.5} />
 
       {/* Bottom Right Quadrant */}
-      <FloatingCodeSnippet code={"@app.get('/api/mesh/nodes')"} x="84%" y="82%" delay={2.5} duration={4.0} />
-      <FloatingCodeSnippet code={"sudo systemctl restart tailscaled"} x="72%" y="92%" delay={2.7} duration={5.2} />
-      <FloatingCodeSnippet code={"aircrack-ng -w wordlist.txt capture.cap"} x="88%" y="15%" delay={3.1} duration={4.5} />
-      <FloatingCodeSnippet code={"hashcat -m 0 hash.txt dict.txt"} x="5%" y="65%" delay={1.2} duration={5.5} />
-      <FloatingCodeSnippet code={"ssh-keygen -t ed25519 -C 'allen@secure'"} x="12%" y="45%" delay={1.8} duration={4.8} />
+      <FloatingCodeSnippet code={"@app.get('/api/mesh')"} x="84%" y="82%" delay={2.5} duration={4.0} />
+      <FloatingCodeSnippet code={"sudo systemctl restart"} x="72%" y="92%" delay={2.7} duration={5.2} />
+      <FloatingCodeSnippet code={"aircrack-ng capture.cap"} x="88%" y="15%" delay={3.1} duration={4.5} />
+      <FloatingCodeSnippet code={"hashcat -m 0 hash.txt"} x="5%" y="65%" delay={1.2} duration={5.5} mobileVisible={true} />
+      <FloatingCodeSnippet code={"ssh-keygen -t ed25519"} x="12%" y="45%" delay={1.8} duration={4.8} />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-center">
@@ -128,18 +130,18 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.7 }}
-              className="flex flex-wrap gap-4"
+              className="flex flex-col sm:flex-row gap-4"
             >
               <a
                 href="#achievements"
-                className="group relative font-mono inline-flex items-center gap-2 px-7 py-3.5 rounded-none text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 transition-all uppercase tracking-widest text-sm"
+                className="group relative font-mono inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-none text-green-400 bg-black border border-green-500/40 hover:bg-green-500/10 transition-all uppercase tracking-widest text-sm w-full sm:w-auto"
               >
                 $ execute --view-work
                 <span className="w-2 h-4 bg-green-400 animate-pulse ml-1" />
               </a>
               <a
                 href="#contact"
-                className="inline-flex font-mono items-center gap-2 px-7 py-3.5 rounded-none border border-white/20 bg-black hover:bg-white/5 text-white/80 transition-all uppercase tracking-widest text-sm"
+                className="inline-flex font-mono items-center justify-center gap-2 px-7 py-3.5 rounded-none border border-white/20 bg-black hover:bg-white/5 text-white/80 transition-all uppercase tracking-widest text-sm w-full sm:w-auto"
               >
                 initiate_contact()
               </a>
@@ -169,10 +171,10 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
               <img 
                 src="/allen-portrait.png" 
                 alt="Allen - Security Researcher & Full-Stack Engineer"
-                className="relative z-10 w-full h-auto object-contain transition-all duration-700"
+                className="relative z-10 w-full h-auto object-contain transition-all duration-700 mx-auto"
                 style={{ 
                   filter: "contrast(1.08) saturate(0.9) drop-shadow(0px 0px 22px rgba(0,255,65,0.18))",
-                  maxHeight: "75vh",
+                  maxHeight: "clamp(300px, 45vh, 75vh)",
                 }}
               />
               

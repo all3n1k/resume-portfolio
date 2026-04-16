@@ -41,6 +41,12 @@ function detectWebGLTier(): WebGLTier {
   }
 }
 
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  // Combine viewport width check and touch point check for reliable mobile detection
+  return window.innerWidth < 768 || (navigator.maxTouchPoints > 0 && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+}
+
 interface LandingDoorSequenceProps {
   children: React.ReactNode;
 }
@@ -184,12 +190,21 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
   const [showTransition, setShowTransition] = useState(false);
   const transitionAction = useRef<"enter" | "exit">("enter");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [webGLTier, setWebGLTier] = useState<WebGLTier>("ok");
   const [bypassDismissed, setBypassDismissed] = useState(false);
 
-  // Detect WebGL capability once on mount (client-only)
+  // Detect WebGL capability and mobile status once on mount (client-only)
   useEffect(() => {
+    const mobile = isMobileDevice();
+    setIsMobile(mobile);
     setWebGLTier(detectWebGLTier());
+
+    // On mobile, trigger the "entry" transition automatically
+    if (mobile) {
+      transitionAction.current = "enter";
+      setShowTransition(true);
+    }
   }, []);
 
   const handleDoorClick = useCallback(() => {
@@ -263,7 +278,7 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
       )}
 
       {/* ── WebGL Bypass Mode ── */}
-      {webGLTier !== "ok" ? (
+      {(webGLTier !== "ok" && !isMobile) ? (
         <div className="relative">
           {/* Dismissible warning banner */}
           {!bypassDismissed && (
