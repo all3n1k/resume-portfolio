@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
   OrbitControls,
+  Html,
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
@@ -478,8 +479,98 @@ function GreenScreenGroup({ positions, material, geometry, dummy, startIdx, step
   );
 }
 
-// ─── Bezel edge highlight (thin emissive ring around each screen) ─────────────
+// ─── Interactive HTML terminals on specific monitors ────────────────────────────
 
+// The screen geometry is createRoundedPlaneGeo(0.85, 0.64, ...) — 0.85 × 0.64 world units.
+// We map a 1024×768 HTML element to that size by scaling the parent group:
+//   scaleX = 0.85 / 1024 ≈ 0.00083  →  1024px × scaleX = 0.85 units  ✓
+//   scaleY = 0.64 / 768  ≈ 0.00083  →  768px  × scaleY = 0.64 units  ✓
+// distanceFactor is intentionally omitted — the group scale + matrix3d handles it.
+const HTML_W = 1024;
+const HTML_H = 768;
+const SCREEN_W = 0.85;  // world units, must match createRoundedPlaneGeo width
+const SCREEN_H = 0.64;  // world units, must match createRoundedPlaneGeo height
+const SCALE_X = SCREEN_W / HTML_W;
+const SCALE_Y = SCREEN_H / HTML_H;
+
+function InteractiveMonitorLayer({
+  positions,
+  focusedId,
+  onClose,
+}: {
+  positions: MonitorPosition[];
+  focusedId: number | null;
+  onClose: () => void;
+}) {
+  // CRITICAL: Memoize rotations so the Euler objects are STABLE across renders.
+  // Without this, each render creates a new Euler → R3F thinks the prop changed
+  // → Html portal detaches+reattaches its DOM element every frame → FLASHING.
+  const stableRotations = useMemo(() => {
+    const dummy = new THREE.Object3D();
+    return INTERACTIVE_IDS.map((id) => {
+      const p = positions[id];
+      if (!p) return new THREE.Euler();
+      dummy.position.set(p.x, p.y, p.z);
+      dummy.lookAt(0, p.lookAtY, 0);
+      return dummy.rotation.clone(); // stable, won't mutate
+    });
+  }, [positions]); // positions is useMemo'd in parent — always same reference
+
+  return (
+    <group>
+      {INTERACTIVE_IDS.map((id, idx) => {
+        const p = positions[id];
+        if (!p) return null;
+        const isFocused = focusedId === id;
+
+        return (
+          // scale: makes 1024×768 HTML element exactly fill the 0.85×0.64 unit screen
+          <group
+            key={id}
+            position={[p.x, p.y, p.z]}
+            rotation={stableRotations[idx]}
+            scale={[SCALE_X, SCALE_Y, 1]}
+          >
+            <Html
+              transform
+              position={[0, 0, 0.61]} // z in LOCAL space (no z-scale applied)
+              style={{
+                width: `${HTML_W}px`,
+                height: `${HTML_H}px`,
+                // When not focused: pass ALL mouse events through to the Three.js canvas
+                pointerEvents: isFocused ? "auto" : "none",
+                userSelect: isFocused ? "auto" : "none",
+              }}
+            >
+              <InteractiveTerminal />
+              {isFocused && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  style={{
+                    position: "absolute",
+                    top: 20,
+                    right: 20,
+                    background: "rgba(0,0,0,0.85)",
+                    border: "2px solid #00ff41",
+                    color: "#00ff41",
+                    fontFamily: "'Courier New', monospace",
+                    fontSize: 22,
+                    padding: "8px 20px",
+                    cursor: "pointer",
+                    zIndex: 10,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  ✕ CLOSE
+                </button>
+              )}
+            </Html>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
 
 function ScreenBezels({ positions }: { positions: MonitorPosition[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -929,6 +1020,8 @@ interface SceneProps {
   videoPaths: string[];
   isActiveScreen: boolean;
   isDoorApproach: boolean;
+  focusedInteractiveId: number | null;
+  onCloseInteractive: () => void;
 }
 
 function Scene({
@@ -943,6 +1036,8 @@ function Scene({
   videoPaths,
   isActiveScreen,
   isDoorApproach,
+  focusedInteractiveId,
+  onCloseInteractive,
 }: SceneProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
@@ -1029,6 +1124,13 @@ function Scene({
       <GreenScreens positions={positions} videoPaths={videoPaths} />
       <ScreenBezels positions={positions} />
 
+      {/* Interactive HTML layer — always live on the monitor surfaces, no pop-in */}
+      <InteractiveMonitorLayer
+        positions={positions}
+        focusedId={focusedInteractiveId}
+        onClose={onCloseInteractive}
+      />
+
       {/* Door */}
       <Door onClick={onDoorClick} hovered={doorHovered} onHover={onDoorHover} />
 
@@ -1071,7 +1173,6 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [cameraLookAtTarget, setCameraLookAtTarget] = useState<THREE.Vector3 | null>(null);
   const [videoVisible, setVideoVisible] = useState(false);
-  const [terminalVisible, setTerminalVisible] = useState(false);
   const [doorHovered, setDoorHovered] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
   const [isDoorApproach, setIsDoorApproach] = useState(false);
@@ -1119,13 +1220,13 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
       setCameraLookAtTarget(null);
       setActiveScreen(null);
     } else {
-      if (activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
-        // Show fullscreen terminal overlay for interactive monitors
-        setTerminalVisible(true);
-      } else {
-        // Show video overlay for regular monitors
+      // Interactive monitors: Html is already live on screen, camera arrival = focus
+      // Regular monitors: show the video overlay
+      if (activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId)) {
         setVideoVisible(true);
       }
+      // For interactive monitors, focusedInteractiveId (derived from activeScreen) is
+      // already set and enables pointer-events on the Html element automatically
     }
   }, [isDoorApproach, isReturning, activeScreen]);
 
@@ -1138,7 +1239,6 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
 
   const handleCloseVideo = useCallback(() => {
     setVideoVisible(false);
-    setTerminalVisible(false);
     setIsReturning(true);
     setCameraTarget(ARCHITECT_CONFIG.cameraHome.clone());
     setCameraLookAtTarget(ARCHITECT_CONFIG.cameraLookAtHome.clone());
@@ -1180,15 +1280,16 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           videoPaths={videoPaths}
           isActiveScreen={!!activeScreen}
           isDoorApproach={isDoorApproach}
+          focusedInteractiveId={
+            activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId)
+              ? activeScreen.instanceId
+              : null
+          }
+          onCloseInteractive={handleCloseVideo}
         />
       </Canvas>
 
-      {/* Fullscreen terminal overlay for interactive monitors */}
-      {terminalVisible && activeScreen && INTERACTIVE_IDS.includes(activeScreen.instanceId) && (
-        <TerminalOverlay onClose={handleCloseVideo} />
-      )}
-
-      {/* Fullscreen video overlay for regular monitors */}
+      {/* Fullscreen video overlay for regular monitors only */}
       {videoVisible && activeScreen && !INTERACTIVE_IDS.includes(activeScreen.instanceId) && (
         <VideoOverlay src={activeScreen.videoSrc} onClose={handleCloseVideo} />
       )}
