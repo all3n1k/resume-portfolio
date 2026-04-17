@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface EntrySplashProps {
@@ -34,50 +34,64 @@ export default function EntrySplash({ onInitializeAudio, onComplete }: EntrySpla
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width = window.innerWidth;
-    const H = canvas.height = window.innerHeight;
+    const initParticles = () => {
+      const W = canvas.width = window.innerWidth;
+      const H = canvas.height = window.innerHeight;
 
-    const spacing = 28;
-    const cols = Math.floor(W / spacing);
-    const rows = Math.floor(H / spacing);
-    const offsetX = (W - cols * spacing) / 2;
-    const offsetY = (H - rows * spacing) / 2;
+      const spacing = 28;
+      // Over-calculate cols and rows to ensure we bleed off the edges
+      const cols = Math.ceil(W / spacing) + 1;
+      const rows = Math.ceil(H / spacing) + 1;
+      
+      // Center the grid so the "extra" columns/rows are split on both sides
+      const offsetX = (W - cols * spacing) / 2;
+      const offsetY = (H - rows * spacing) / 2;
 
-    const pts: Particle[] = [];
-    const centerX = W / 2;
-    const centerY = H / 2;
-    const safeZoneW = 320; // Width of the UI area to keep clear
-    const safeZoneH = 180; // Height of the UI area to keep clear
+      const pts: Particle[] = [];
+      const centerX = W / 2;
+      const centerY = H / 2;
+      const safeZoneW = 320; 
+      const safeZoneH = 180; 
 
-    for (let i = 0; i < cols; i++) {
-      for (let j = 0; j < rows; j++) {
-        const x = offsetX + i * spacing;
-        const y = offsetY + j * spacing;
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const x = offsetX + i * spacing;
+          const y = offsetY + j * spacing;
 
-        // Skip particles that would be directly behind the center UI button/text
-        if (
-          Math.abs(x - centerX) < safeZoneW / 2 &&
-          Math.abs(y - centerY) < safeZoneH / 2
-        ) {
-          continue;
+          if (
+            Math.abs(x - centerX) < safeZoneW / 2 &&
+            Math.abs(y - centerY) < safeZoneH / 2
+          ) {
+            continue;
+          }
+
+          pts.push({
+            x,
+            y,
+            char: MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)],
+            vx: 0,
+            vy: 0,
+            opacity: 0.4 + Math.random() * 0.4,
+            size: 14 + Math.random() * 4,
+            life: 1
+          });
         }
-
-        pts.push({
-          x,
-          y,
-          char: MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)],
-          vx: 0,
-          vy: 0,
-          opacity: 0.4 + Math.random() * 0.4,
-          size: 14 + Math.random() * 4,
-          life: 1
-        });
       }
-    }
-    particles.current = pts;
+      particles.current = pts;
+    };
+
+    initParticles();
+
+    const handleResize = () => {
+      if (!clicked) {
+        initParticles();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
 
     const animate = () => {
-      ctx.clearRect(0, 0, W, H);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.font = "bold 16px monospace";
 
       particles.current.forEach((p) => {
@@ -86,7 +100,6 @@ export default function EntrySplash({ onInitializeAudio, onComplete }: EntrySpla
           p.y += p.vy;
           p.opacity -= 0.015;
           p.life -= 0.015;
-          // Add a bit of rotation/wobble
           p.vx *= 1.01;
           p.vy *= 1.01;
         }
@@ -103,6 +116,7 @@ export default function EntrySplash({ onInitializeAudio, onComplete }: EntrySpla
     requestRef.current = requestAnimationFrame(animate);
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      window.removeEventListener("resize", handleResize);
     };
   }, [clicked]);
 

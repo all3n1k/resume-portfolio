@@ -6,7 +6,6 @@ import { FloatingCodeSnippet } from "@/components/HeroSection";
 import ModernAchievements from "@/components/ModernAchievements";
 import TechStack from "@/components/TechStack";
 import ModernContact from "@/components/ModernContact";
-import MouseGlitchText from "@/components/MouseGlitchText";
 import InitFade from "@/components/InitFade";
 
 const achievements = [

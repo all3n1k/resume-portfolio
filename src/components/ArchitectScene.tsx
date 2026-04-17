@@ -302,7 +302,6 @@ function CRTWall({ positions, onMonitorClick, isLowEnd }: CRTWallProps) {
   );
 
   const hitMeshRef = useRef<THREE.InstancedMesh>(null);
-  const color = useMemo(() => new THREE.Color(), []);
 
   // ─ HOVER GLOW ──────────────────────────────────────────────────────────────────────
   // O(1) update on hover change instead of O(n) every frame.
