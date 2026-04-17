@@ -43,22 +43,6 @@ const achievements = [
 export default function Home() {
   return (
     <>
-      {/* Massive centered floating text overlay */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center font-bold"
-        style={{ fontFamily: "'OCR A Std', 'OCR-A', 'OCR A Extended', monospace" }}
-      >
-        <MouseGlitchText 
-          text="knock, knock, Allen." 
-          baseColor="black"
-          outlineColor="#00ff41"
-          outlineWidth="4px"
-          className="text-[8vw] md:text-[5rem] tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(0,255,65,0.4)] text-center px-4" 
-          glitchRadius={180}
-          autoDissolveDelay={5000}
-        />
-      </div>
-
       <InitFade />
 
       <LandingDoorSequence>

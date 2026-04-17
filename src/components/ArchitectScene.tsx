@@ -1004,7 +1004,19 @@ function Scene({
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export default function ArchitectScene({ onDoorClick, videoPaths = [] }: ArchitectSceneProps) {
+interface ArchitectSceneProps {
+  onDoorClick: () => void;
+  videoPaths?: string[];
+  audioInitialized?: boolean;
+  onInitializeAudio?: () => void;
+}
+
+export default function ArchitectScene({ 
+  onDoorClick, 
+  videoPaths = [],
+  audioInitialized = false,
+  onInitializeAudio = () => {}
+}: ArchitectSceneProps) {
   const positions = useMemo(() => buildPositions(), []);
 
   // Detect GPU quality once, synchronously, before Canvas is created so gl props are correct
@@ -1167,6 +1179,40 @@ export default function ArchitectScene({ onDoorClick, videoPaths = [] }: Archite
           pointerEvents: "none",
         }}
       />
+
+      {/* Audio Initialization Prompt */}
+      {!audioInitialized && (
+        <button
+          onClick={onInitializeAudio}
+          className="absolute bottom-6 right-8 z-[60] flex items-center gap-3 transition-opacity hover:opacity-80"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "monospace",
+          }}
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span className="text-[10px] sm:text-xs text-green-500/60 uppercase tracking-[0.2em]">
+            [ AUDIO_SUBSYSTEM: OFFLINE ] — CLICK TO INITIALIZE
+          </span>
+        </button>
+      )}
+
+      {/* Connected indicator (if initialized) */}
+      {audioInitialized && (
+        <div className="absolute bottom-6 right-8 z-[60] flex items-center gap-3 opacity-30 pointer-events-none">
+          <span className="relative flex h-2 w-2">
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span className="text-[10px] text-green-500/40 uppercase tracking-[0.2em] font-mono">
+            [ AUDIO_SUBSYSTEM: ONLINE ]
+          </span>
+        </div>
+      )}
 
       {/* Hint label */}
       {!activeScreen && (

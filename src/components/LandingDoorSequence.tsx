@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ArchitectScene from "./ArchitectScene";
 import MatrixCanvas from "./MatrixCanvas";
+import EntrySplash from "./EntrySplash";
 
 // ─── WebGL Capability Detection ───────────────────────────────────────────────
 
@@ -189,22 +190,19 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
   const [entered, setEntered] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const transitionAction = useRef<"enter" | "exit">("enter");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const portfolioAudioRef = useRef<HTMLAudioElement | null>(null);
+  const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [webGLTier, setWebGLTier] = useState<WebGLTier>("ok");
   const [bypassDismissed, setBypassDismissed] = useState(false);
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [splashComplete, setSplashComplete] = useState(false);
 
   // Detect WebGL capability and mobile status once on mount (client-only)
   useEffect(() => {
     const mobile = isMobileDevice();
     setIsMobile(mobile);
     setWebGLTier(detectWebGLTier());
-
-    // On mobile, trigger the "entry" transition automatically
-    if (mobile) {
-      transitionAction.current = "enter";
-      setShowTransition(true);
-    }
   }, []);
 
   const handleDoorClick = useCallback(() => {
@@ -229,7 +227,26 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     setShowTransition(false);
   }, []);
 
-  // Globally track 3D scene state to hide floating UI (like TopNav) when rendering 3D architecture
+  const handleInitializeAudio = useCallback(() => {
+    setAudioInitialized(true);
+    if (portfolioAudioRef.current) {
+      portfolioAudioRef.current.play().catch(() => {});
+      portfolioAudioRef.current.volume = 0;
+    }
+    if (ambientAudioRef.current) {
+      ambientAudioRef.current.play().catch(() => {});
+      ambientAudioRef.current.volume = 0;
+    }
+  }, []);
+
+  const handleSplashComplete = useCallback(() => {
+    setSplashComplete(true);
+    // On mobile, we skip the 3D scene entirely. Once the splash is done,
+    // trigger the Matrix rain transition to the 2D portfolio.
+    if (isMobile) {
+      handleDoorClick();
+    }
+  }, [isMobile, handleDoorClick]);
   useEffect(() => {
     if (!entered) {
       document.body.classList.add("scene-active");
@@ -242,36 +259,47 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
     };
   }, [entered]);
 
-  // Fade-in ambient music when the user enters the portfolio
+  // Handle dual-track audio cross-fading
   useEffect(() => {
-    if (!entered) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      return;
-    }
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = 0;
-    audio.play().catch(() => {}); // silent catch for browsers that block autoplay
-    const TARGET = 0.6;
-    const DURATION = 3000; // ms
+    const portfolioAudio = portfolioAudioRef.current;
+    const ambientAudio = ambientAudioRef.current;
+    if (!portfolioAudio || !ambientAudio || !audioInitialized) return;
+
+    // TARGET volumes for different modes
+    const TARGET_PORTFOLIO = 0.55;
+    const TARGET_AMBIENT = 0.65; // The new track is naturally quieter, giving it more headroom
+    
+    // Determine target volumes based on 'entered' state (simulation vs portfolio)
+    const targetPortfolioVol = entered ? TARGET_PORTFOLIO : 0;
+    const targetAmbientVol = entered ? 0 : TARGET_AMBIENT;
+    
+    // Smooth transition
+    const DURATION = 2500;
     const start = performance.now();
+    const initialPortfolioVol = portfolioAudio.volume;
+    const initialAmbientVol = ambientAudio.volume;
     let raf: number;
+
     const ramp = (now: number) => {
       const t = Math.min(Math.max((now - start) / DURATION, 0), 1);
-      audio.volume = Math.min(Math.max(t * TARGET, 0), 1);
+      // Sinusoidal easing for smoother transition
+      const easedT = 0.5 - 0.5 * Math.cos(t * Math.PI);
+      
+      portfolioAudio.volume = initialPortfolioVol + (targetPortfolioVol - initialPortfolioVol) * easedT;
+      ambientAudio.volume = initialAmbientVol + (targetAmbientVol - initialAmbientVol) * easedT;
+      
       if (t < 1) raf = requestAnimationFrame(ramp);
     };
+
     raf = requestAnimationFrame(ramp);
     return () => cancelAnimationFrame(raf);
-  }, [entered]);
+  }, [entered, audioInitialized]);
 
   return (
     <>
-      {/* Audio always mounted so ref is attached before effect fires */}
-      <audio ref={audioRef} src="/audio/synthwave.mp3" loop className="hidden" />
+      {/* Audio Layer — Dual tracks for cross-fading */}
+      <audio ref={portfolioAudioRef} src="/audio/synthwave.mp3" loop className="hidden" />
+      <audio ref={ambientAudioRef} src="/audio/ambient.mp3" loop className="hidden" />
 
       {showTransition && (
         <MatrixRain onMidpoint={handleMidpoint} onComplete={handleComplete} />
@@ -358,7 +386,21 @@ export default function LandingDoorSequence({ children }: LandingDoorSequencePro
         </div>
       ) : (
         <div className="relative w-full h-screen overflow-hidden">
-          <ArchitectScene onDoorClick={handleDoorClick} videoPaths={SCREEN_VIDEOS} />
+          {!splashComplete && (webGLTier === "ok" || isMobile) && (
+            <EntrySplash 
+              onInitializeAudio={handleInitializeAudio} 
+              onComplete={handleSplashComplete} 
+            />
+          )}
+          {/* Only render 3D scene on desktop */}
+          {!isMobile && (
+            <ArchitectScene 
+              onDoorClick={handleDoorClick} 
+              videoPaths={SCREEN_VIDEOS}
+              audioInitialized={audioInitialized}
+              onInitializeAudio={handleInitializeAudio}
+            />
+          )}
         </div>
       )}
     </>

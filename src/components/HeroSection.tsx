@@ -45,15 +45,15 @@ export default function HeroSection({ name, tagline }: HeroSectionProps) {
     <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden">
       {/* Floating code snippets */}
       {/* Top Left Quadrant — Mobile Visible */}
-      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="5%" y="15%" delay={1.5} duration={4.2} mobileVisible={true} />
+      <FloatingCodeSnippet code={"fn classify(pkt: &[u8]) -> Result<Class>"} x="5%" y="15%" delay={1.5} duration={4.2} />
       <FloatingCodeSnippet code={"chmod +x deploy.sh"} x="8%" y="5%" delay={1.8} duration={3.8} />
 
       {/* Bottom Left Quadrant */}
       <FloatingCodeSnippet code={"export async function POST(req: Request)"} x="1%" y="88%" delay={1.8} duration={5.1} />
       <FloatingCodeSnippet code={"docker-compose up -d"} x="6%" y="94%" delay={2.1} duration={4.5} />
 
-      {/* Top Right Quadrant — Mobile Visible */}
-      <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} mobileVisible={true} />
+      {/* Top Right Quadrant */}
+      <FloatingCodeSnippet code={"import torch.nn as nn"} x="75%" y="18%" delay={2.3} duration={4.8} />
       <FloatingCodeSnippet code={"def update_servo(yaw):"} x="82%" y="8%" delay={2.0} duration={3.5} />
 
       {/* Bottom Right Quadrant */}
